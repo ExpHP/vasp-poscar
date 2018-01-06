@@ -289,6 +289,7 @@ pub enum Coords<T=Vec<[f64; 3]>> {
 }
 
 impl<A> Coords<A> {
+    #[allow(unused)]
     pub(crate) fn map<B, F>(self, f: F) -> Coords<B>
     where F: FnOnce(A) -> B,
     { match self {
@@ -296,18 +297,21 @@ impl<A> Coords<A> {
         Coords::Frac(x) => Coords::Frac(f(x)),
     }}
 
+    #[allow(unused)]
     pub(crate) fn as_ref(&self) -> Coords<&A>
     { match *self {
         Coords::Cart(ref x) => Coords::Cart(x),
         Coords::Frac(ref x) => Coords::Frac(x),
     }}
 
+    #[allow(unused)]
     pub(crate) fn as_mut(&mut self) -> Coords<&mut A>
     { match *self {
         Coords::Cart(ref mut x) => Coords::Cart(x),
         Coords::Frac(ref mut x) => Coords::Frac(x),
     }}
 
+    #[allow(unused)]
     pub(crate) fn raw(self) -> A
     { match self {
         Coords::Cart(x) => x,

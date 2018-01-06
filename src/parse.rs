@@ -104,9 +104,6 @@ where
         self.cur += 1;
         Ok(Spanned { path, line, col, s })
     }
-
-    pub(crate) fn next_n(&mut self, n: usize) -> Result<Vec<Spanned>, ::failure::Error>
-    { (0..n).map(|_| self.next()).collect() }
 }
 
 impl<S> Spanned<S> {
@@ -158,16 +155,16 @@ impl<S: AsRef<str>> Spanned<S> {
 
         'start:
         while let Some((start, (prev, cur))) = iter.next() {
-            if prev.is_ascii_whitespace() && !cur.is_ascii_whitespace() {
+            if is_ascii_whitespace(prev) && !is_ascii_whitespace(cur) {
 
-                while let Some((end, (prev, cur))) = iter.next() {
-                    if cur.is_ascii_whitespace() {
+                while let Some((end, (_, cur))) = iter.next() {
+                    if is_ascii_whitespace(cur) {
                         out.push(self.slice(start..end));
                         continue 'start;
                     }
                 }
 
-                panic!("never encountered whitespace!")
+                panic!("never encountered whitespace!");
             }
         }
         Words {
