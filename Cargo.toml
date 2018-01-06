@@ -1,0 +1,12 @@
+[package]
+authors = ["Michael Lamparski <diagonaldevice@gmail.com>"]
+name = "poscar"
+version = "0.1.0"
+
+[dependencies]
+dtoa = "0.4.2"
+failure = "0.1.1"
+
+[[test]]
+harness = false
+name = "parse"
