@@ -19,5 +19,9 @@ name = "parse"
 
 [[test]]
 name = "raw-parse"
+
 [[test]]
 name = "raw-write"
+
+[[test]]
+name = "validate"

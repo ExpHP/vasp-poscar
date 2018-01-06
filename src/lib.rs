@@ -230,6 +230,9 @@ mod parse;
 mod types;
 mod write;
 
-pub use types::*;
+pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
 pub use parse::{from_path, from_reader};
 pub use write::{to_writer};
+
+pub use types::ValidationError;
+pub use parse::ParseError;

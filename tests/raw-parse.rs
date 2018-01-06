@@ -4,6 +4,8 @@
 //! These tests set a pretty low bar for success. If any of them
 //! fail then the implementation of `parse` is clearly beyond broken.
 
+#![deny(unused)]
+
 #[macro_use]
 extern crate indoc;
 extern crate poscar;
