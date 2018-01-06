@@ -17,6 +17,8 @@ mod error {
     pub struct ParseError {
         pub(crate) kind: Kind,
         pub(crate) path: Option<PathBuf>,
+        // (NOTE: these are zero-based for maximum comfort, but the Display
+        //        impl will use one-based indices for convention)
         pub(crate) line: Option<usize>,
         pub(crate) col: Option<usize>,
     }
@@ -30,11 +32,11 @@ mod error {
 
             match (self.line, self.col) {
                 (None, _) => {}
-                (Some(r), None) => write!(f, "{}:", r)?,
-                (Some(r), Some(c)) => write!(f, "{}:{}:", r, c)?,
+                (Some(r), None) => write!(f, "{}: ", r + 1)?,
+                (Some(r), Some(c)) => write!(f, "{}:{}: ", r + 1, c + 1)?,
             }
 
-            Ok(())
+            <Kind as fmt::Display>::fmt(&self.kind, f)
         }
     }
 

@@ -7,6 +7,11 @@ version = "0.1.0"
 dtoa = "0.4.2"
 failure = "0.1.1"
 
+[dev-dependencies]
+serde = { version = "1.0.27", features = ["derive"] }
+serde_yaml = "0.7.3"
+left-pad = "1.0.1" # this can't possibly go wrong
+
 [[test]]
 harness = false
 name = "parse"
