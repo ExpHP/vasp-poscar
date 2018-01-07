@@ -49,7 +49,9 @@
 //!
 //! * All primitives are understood to be **separated by spaces or tabs**.
 //!   The rest of `read(*)`'s wild syntax is not supported.
-//! * An **integer** is whatever can be parsed using `std::str::FromStr`.
+//! * An **unsigned integer** is whatever can be parsed using `std::str::FromStr`,
+//!   with the additional constraint that it may not have a leading `+`.
+//!   (this constraint makes the specification of the counts/symbols lines simpler)
 //! * A **real** is whatever can be parsed using `std::str::FromStr`.
 //! * A **logical** is parsed [like `read(*)` does](https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnc5/index.html),
 //!   which amounts to the regex `\.?[tTfF].*`.
@@ -122,18 +124,19 @@
 //!
 //! The optional symbols line before the counts line is detected by
 //! checking if the first non-whitespace character is a digit.
+//! (this is exactly what VASP does)
 //!
 //! Every whitespace-separated token on the symbols line is regarded as a symbol.
 //!
-//! Each whitespace-separacted word on the counts line up *until the first word
-//! which does not parse as an integer* is regarded as a count.  *The rest of the
-//! line is a freeform comment.*
+//! Each whitespace-separacted word on the counts line *up until the first word
+//! which does not parse as an unsigned integer* (see the section on primitives)
+//! is regarded as a count. *The rest of the line is a freeform comment.*
 //!
 //! If symbols are provided, the number of counts and symbols must match.
 //!
 //! Symbols are not validated by this crate, which will accept any arbitrary
-//! string without whitespace. Knowing the periodic table is considered "out of scope"
-//! for this crate.
+//! string that does not contain whitespace. Knowing the periodic table is
+//! considered "out of scope" for this crate.
 //!
 //! * It is forbidden for the total atom count to be zero.
 //!   (this is in anticipation of eventual support for pymatgen-style symbols
@@ -164,6 +167,7 @@
 //!
 //! (FIXME make implementation match)
 //! (FIXME use log)
+//! (FIXME link all the things)
 //!
 //! Each data line begins with **three reals**.
 //! If Selective dynamics is enabled, then these are followed by **three logicals**.

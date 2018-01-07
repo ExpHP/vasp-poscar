@@ -17,7 +17,7 @@ fn main() {
 
     println!("running {} tests", tests.len());
 
-    let name_pad = tests.iter().map(|test| test.basename.len()).max().unwrap().min(16);
+    let name_pad = tests.iter().map(|test| test.basename.len()).max().unwrap().min(32);
 
     let mut failures = vec![];
     for test in tests {
@@ -28,7 +28,11 @@ fn main() {
                 Ok(()) => print!("."),
                 Err(e) => {
                     print!("E");
-                    failures.push(Failure(format!("{}::case_{}", test.basename, i), e));
+
+                    // give the test a Rusty-looking path, just for display purposes
+                    let meth = case.name.clone().unwrap_or_else(|| format!("case_{}", i));
+                    let path = format!("{}::{}", test.basename, meth).replace("-", "_");
+                    failures.push(Failure(path, e));
                 },
             }
         }
@@ -49,18 +53,48 @@ struct TestSpec {
     cases: Vec<Test>,
 }
 
-#[derive(Serialize, Deserialize)]
+// Format of test in yaml
+#[derive(Clone, Deserialize)]
 #[serde(untagged)]
-enum Test {
-    Success {
-        input: String,
-        output: String,
-    },
-    Failure {
-        input: String,
-        error: String,
-    },
+enum RawTest {
+    Success { name: Option<String>, input: Input, output: String },
+    Failure { name: Option<String>, input: Input, error: String },
 }
+
+#[derive(Clone, Deserialize)]
+#[serde(untagged)]
+enum Input {
+    Blob(String), // usually one big "|"-style YAML string
+    Lines(Vec<String>), // form sometimes used so that comments can be embedded
+}
+
+impl Input {
+    fn into_string(self) -> String
+    { match self {
+        Input::Blob(s) => s,
+        Input::Lines(lines) => lines.join("\n"),
+    }}
+}
+
+// Nicer representation of Test
+struct Test { name: Option<String>, input: String, kind: TestKind }
+enum TestKind { Success(String), Failure(String) }
+
+impl RawTest {
+    fn unraw(self) -> Test
+    {
+        let (name, input) = match self.clone() {
+            RawTest::Success { name, input, .. } |
+            RawTest::Failure { name, input, .. } => (name, input.into_string()),
+        };
+        let kind = match self {
+            RawTest::Success { output, .. } => TestKind::Success(output),
+            RawTest::Failure { error, .. } => TestKind::Failure(error),
+        };
+        Test { name, input, kind }
+    }
+}
+
 
 fn collect_tests(dir: &Path) -> Result<Vec<TestSpec>, FailError> {
     let mut out = vec![];
@@ -69,10 +103,12 @@ fn collect_tests(dir: &Path) -> Result<Vec<TestSpec>, FailError> {
         let path = entry.path();
         if path.extension() == Some("yaml".as_ref()) {
             let file = fs::File::open(path.as_path())?;
-            let cases = ::serde_yaml::from_reader(file)
-                            .with_context(|_| {
-                                format!("error reading {}", path.as_path().display())
-                            })?;
+            let cases: Vec<RawTest> = ::serde_yaml::from_reader(file)
+                                      .with_context(|_| {
+                                          format!("error reading {}", path.as_path().display())
+                                      })?;
+            let cases = cases.into_iter().map(RawTest::unraw).collect();
+
             let basename = path.file_stem().unwrap().to_string_lossy().to_string();
             out.push(TestSpec { basename, cases });
         }
@@ -102,8 +138,9 @@ enum Error {
 
 impl Test {
     fn run(&self) -> Result<(), Error> {
-        match *self {
-            Test::Success { ref input, output: ref expected } => {
+        let Test { ref input, ref kind, .. } = *self;
+        match *kind {
+            TestKind::Success(ref expected) => {
                 match ::poscar::from_reader(input.as_bytes()) {
                     Err(e) => { return Err(Error::Error(e)); },
                     Ok(poscar) => {
@@ -126,7 +163,7 @@ impl Test {
                     },
                 }
             },
-            Test::Failure { ref input, error: ref expected } => {
+            TestKind::Failure(ref expected) => {
                 match ::poscar::from_reader(input.as_bytes()) {
                     Ok(_) => { return Err(Error::NoError); },
                     Err(e) => {

@@ -5,6 +5,7 @@ use ::{Coords, RawPoscar, ScaleLine, Poscar};
 use ::std::rc::Rc;
 use ::std::io::prelude::*;
 use ::std::ops::Range;
+use ::std::str::FromStr;
 use ::std::cmp::Ordering;
 use ::std::path::{Path, PathBuf};
 
@@ -40,18 +41,18 @@ mod error {
         }
     }
 
-    use ::std::num::{ParseIntError, ParseFloatError};
+    use ::std::num::ParseFloatError;
 
     #[derive(Debug, Fail)]
     pub(crate) enum Kind {
         #[fail(display="{}", _0)] ParseFloat(ParseFloatError),
         #[fail(display="{}", _0)] ParseLogical(ParseLogicalError),
-        #[fail(display="{}", _0)] ParseInt(ParseIntError),
+        #[fail(display="{}", _0)] ParseUnsigned(ParseUnsignedError),
         #[fail(display="{}", _0)] Generic(String),
     }
 
-    impl From<ParseIntError> for Kind { fn from(e: ParseIntError) -> Kind { Kind::ParseInt(e) } }
     impl From<ParseFloatError> for Kind { fn from(e: ParseFloatError) -> Kind { Kind::ParseFloat(e) } }
+    impl From<ParseUnsignedError> for Kind { fn from(e: ParseUnsignedError) -> Kind { Kind::ParseUnsigned(e) } }
     impl From<ParseLogicalError> for Kind { fn from(e: ParseLogicalError) -> Kind { Kind::ParseLogical(e) } }
     impl<'a> From<&'a str> for Kind { fn from(e: &'a str) -> Kind { Kind::Generic(e.into()) } }
     impl From<String> for Kind { fn from(e: String) -> Kind { Kind::Generic(e) } }
@@ -175,8 +176,8 @@ impl<S: AsRef<str>> Spanned<S> {
     }
 
     pub(crate) fn parse<T>(&self) -> Result<T, ParseError>
-    where T: ::std::str::FromStr,
-            <T as ::std::str::FromStr>::Err: Into<error::Kind>,
+    where T: FromStr,
+          T::Err: Into<error::Kind>,
     { self.s.as_ref().parse().map_err(|e| self.error(e)) }
 
 
@@ -243,7 +244,7 @@ pub(crate) struct Logical(pub bool);
 #[fail(display = "invalid Fortran logical value: {:?}", _0)]
 pub struct ParseLogicalError(String);
 
-impl ::std::str::FromStr for Logical {
+impl FromStr for Logical {
     type Err = ParseLogicalError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -260,6 +261,33 @@ impl ::std::str::FromStr for Logical {
             Some(&b'f') | Some(&b'F') => Ok(Logical(false)),
             _ => Err(ParseLogicalError(input.to_string())),
         }
+    }
+}
+
+// Parses like u64 but forbids the leading '+'.
+//
+// Mentioned under 'primitives' in the file format doc page.
+// TODO: link
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) struct Unsigned(pub u64);
+
+#[derive(Debug, Fail)]
+#[fail(display = "{}", _0)]
+pub(crate) struct ParseUnsignedError(::failure::Error);
+
+#[derive(Debug, Fail)]
+#[fail(display = "invalid digit for integer")]
+pub(crate) struct LeadingPlusError;
+
+impl FromStr for Unsigned {
+    type Err = ParseUnsignedError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input.chars().next() {
+            Some('+') => g_bail!(ParseUnsignedError(LeadingPlusError.into())),
+            _ => {},
+        }
+        input.parse().map(Unsigned).map_err(|e| ParseUnsignedError(e.into()))
     }
 }
 
@@ -289,6 +317,9 @@ where P: AsRef<Path>,
     let f = ::std::io::BufReader::new(f);
     _from_reader(f, Some(path))
 }
+
+fn parse_unsigned(s: &str) -> Result<u64, ParseUnsignedError>
+{ let Unsigned(x) = s.parse()?; Ok(x) }
 
 fn _from_reader<R, P>(f: R, path: Option<P>) -> Result<Poscar, ::failure::Error>
 where R: BufRead, P: AsRef<Path>,
@@ -364,7 +395,7 @@ where R: BufRead, P: AsRef<Path>,
         };
 
         let group_counts: Result<Vec<usize>, _> = {
-            counts_line.words().map(|s| s.parse())
+            counts_line.words().map(|s| parse_unsigned(s.as_str()).map(|x| x as usize))
                                .take_while(|e| e.is_ok())
                                .collect()
         };

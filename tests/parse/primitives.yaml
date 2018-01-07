@@ -1,0 +1,121 @@
+# These tests may contain many things packed into a single example.
+# The input is broken up into lines to make embedded comments possible.
+
+# Each individual thing tested is annotated in a comment.
+
+- name: float-point-and-exponent
+  input:
+  - "comment"
+  # special case: mixture of multiple digits and exponent
+  - "  10.0e-1"
+  # exponent case: lower
+  # exponent sign: positive (explicit)
+  # format: int.frac
+  - "    1.0e+02 0.0 0.0"
+  # exponent case: upper
+  # exponent sign: positive (implicit)
+  # format: int.
+  - "    0. 1.E2 0."
+  # exponent sign: negative
+  # format: int
+  - "    0 0 1e-2"
+  - "   1"
+  - "Direct"
+  # format: .frac
+  # special case: zero with exponent
+  - "  0.1 .1 0.0e3"
+  output: |
+    comment
+      1.0
+        100.0 0.0 0.0
+        0.0 100.0 0.0
+        0.0 0.0 0.01
+       1
+    Direct
+      0.1 0.1 0.0
+
+- name: float-sign
+  input:
+  - "comment"
+  - "  1.0"
+  # explicit plus sign in real
+  - "    +1.0 +0.0 +0.0"
+  - "    0.0 1.0 0.0"
+  # explicit minus sign in real
+  # preservation of minus zero
+  - "    -0.0 -0.0 -1.0"
+  # (note: we choose not to support "+1" here)
+  - "   1"
+  - "Direct"
+  - "  0.0 0.0 0.0"
+  output: |
+    comment
+      1.0
+        1.0 0.0 0.0
+        0.0 1.0 0.0
+        -0.0 -0.0 -1.0
+       1
+    Direct
+      0.0 0.0 0.0
+
+- name: positive-unsigned-fail-1
+  input:
+  - "comment"
+  - "  1.0"
+  - "    1.0 0.0 0.0"
+  - "    0.0 1.0 0.0"
+  - "    0.0 0.0 1.0"
+  # plus sign on unsigned integers is explicitly not supported
+  - "   +1"
+  - "Direct"
+  - "  0.0 0.0 0.0"
+  # ...but thanks to freeform comments, there's not much that
+  # can be done to emit a sensible diagnostic.
+  # TODO: Maybe we can log a warning here?
+  error: "7:1: Inconsistent number of counts"
+
+- name: positive-unsigned-fail-2
+  input:
+  - "comment"
+  - "  1.0"
+  - "    1.0 0.0 0.0"
+  - "    0.0 1.0 0.0"
+  - "    0.0 0.0 1.0"
+  # This fails in an entirely different way.
+  # Once again, you can blame freeform comments. (guess what the "+1" is?)
+  - "   1 +1"
+  - "Direct"
+  - "  0.0 0.0 0.0"
+  - "  0.0 0.0 0.0"
+  # TODO: Maybe we can log a warning here?
+  # FIXME: This error sucks for other reasons.  The actual cause of failure
+  #        is that there are too many positions. (it expects one)
+  error: "9:1: expected EOF"
+
+- name: fortran-logical
+  input:
+  - "comment"
+  - "  1.0"
+  - "    1.0 0.0 0.0"
+  - "    0.0 1.0 0.0"
+  - "    0.0 0.0 1.0"
+  - "   4"
+  - "Selective Dynamics"
+  - "Direct"
+  - "  0.0 0.0 0.0 t T .T"
+  - "  0.0 0.0 0.0 .TRUE. .t Technomatic"
+  - "  0.0 0.0 0.0 f F .F"
+  - "  0.0 0.0 0.0 .FALSE. .f frenchbraid"
+  output: |
+    comment
+      1.0
+        1.0 0.0 0.0
+        0.0 1.0 0.0
+        0.0 0.0 1.0
+       4
+    Selective Dynamics
+    Direct
+      0.0 0.0 0.0 T T T
+      0.0 0.0 0.0 T T T
+      0.0 0.0 0.0 F F F
+      0.0 0.0 0.0 F F F
