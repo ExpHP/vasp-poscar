@@ -41,7 +41,7 @@ fn main() {
         println!("Err: {:#?}", failure.1);
     }
 
-    assert_eq!(failures.len(), 0);
+    assert_eq!(failures.len(), 0, "a test has failed!");
 }
 
 struct TestSpec {

@@ -363,9 +363,11 @@ where R: BufRead, P: AsRef<Path>,
             },
         };
 
-        // FIXME this should stop at the first non-integer and consider the rest to be
-        //        a "freeform comment." (he wrote, and then shuddered)
-        let group_counts: Result<Vec<usize>, _> = counts_line.words().map(|s| s.parse()).collect();
+        let group_counts: Result<Vec<usize>, _> = {
+            counts_line.words().map(|s| s.parse())
+                               .take_while(|e| e.is_ok())
+                               .collect()
+        };
         let group_counts = group_counts?;
 
         if let Some(ref group_symbols) = group_symbols {

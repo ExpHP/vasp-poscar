@@ -1,0 +1,61 @@
+# Unfortunately, this is not a joke.
+#
+# In fact, you can find this very file in one of VASP's own tutorials:
+#
+#     https://cms.mpi.univie.ac.at/vasp/vasp/diamond.html
+#
+# These are... uh...... let's call them "freeform comments,"
+# and for better or worse, we HAVE to support them.
+#
+# What a frightening world we live in...
+- input: |
+    cubic diamond    comment line
+     3.7             universal scaling factor
+     0.5 0.5 0.0     first  Bravais lattice vector
+     0.0 0.5 0.5     second Bravais lattice vector
+     0.5 0.0 0.5     third  Bravais lattice vector
+     2               number of atoms per species
+    direct           direct or cart (only first letter is significant)
+     0.0 0.0 0.0     positions
+     0.25 0.25 0.25
+  output: |
+    cubic diamond    comment line
+     3.7
+      0.5 0.5 0.0
+      0.0 0.5 0.5
+      0.5 0.0 0.5
+     2
+    Direct
+      0.0 0.0 0.0
+      0.25 0.25 0.25
+
+# Notably, the symbols line cannot have a comment (because ALL tokens are
+# taken as symbols), while the counts line has a comment which begins at
+# the first token that cannot be parsed as an integer.
+#
+# Comments on position data lines are sometimes used to store metadata.
+# (e.g. pymatgen puts symbols there)
+- input: |
+    cubic diamond
+     3.7
+     0.5 0.5 0.0
+     0.0 0.5 0.5
+     0.5 0.0 0.5
+     C N
+     1 1             7number this is totes 42 a valid comment
+    selective dynamics is signalled by the presence of this line
+    direct
+     0.0 0.0 0.0    T T T  and these freeform comments right here are
+     0.25 0.25 0.25 T T T  actually (ab)used by some tools to store symbols
+  output: |
+    cubic diamond
+     3.7
+      0.5 0.5 0.0
+      0.0 0.5 0.5
+      0.5 0.0 0.5
+     C N
+     1 1
+    Selective Dynamics
+    Direct
+      0.0 0.0 0.0 T T T
+      0.25 0.25 0.25 T T T
