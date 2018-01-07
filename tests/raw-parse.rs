@@ -1,8 +1,7 @@
-//! Simple tests of how textual content in a POSCAR file maps to
-//! the fields on RawPoscar.
+//! Smoke test of poscar parsing.
 //!
-//! These tests set a pretty low bar for success. If any of them
-//! fail then the implementation of `parse` is clearly beyond broken.
+//! This sets a pretty low bar, and only the most
+//! phenomenally broken implementation can fail here.
 
 #![deny(unused)]
 

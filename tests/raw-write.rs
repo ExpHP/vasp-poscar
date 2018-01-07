@@ -1,8 +1,9 @@
-// These test the output forms of various fields on RawPoscar.
-//
-// These are sensitive to a few arbitrary choices in output format;
-// but other than that, they set a pretty low bar, and only the most
-// phenomenally broken implementation can fail here.
+//! Smoke test of Poscar::write.
+//!
+//! This sets a pretty low bar, and only the most
+//! phenomenally broken implementation can fail here.
+//!
+//! Is incidentally sensitive to output format.
 
 extern crate poscar;
 use ::poscar::{RawPoscar, ScaleLine, Coords};
@@ -58,7 +59,7 @@ fn scale() {
 
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [1]),
-        [" 2.75"],
+        ["  2.75"],
     );
 
     let mut poscar = boring_poscar();
@@ -66,7 +67,7 @@ fn scale() {
 
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [1]),
-        [" -2.75"],
+        ["  -2.75"],
     );
 }
 
@@ -81,9 +82,9 @@ fn lattice() {
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [2, 3, 4]),
         [
-            "  1.25 2.5 3.0",
-            "  -1.25 2.5 3.0",
-            "  1.25 -2.5 3.0",
+            "    1.25 2.5 3.0",
+            "    -1.25 2.5 3.0",
+            "    1.25 -2.5 3.0",
         ],
     );
 }
@@ -96,7 +97,7 @@ fn atom_types() {
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [5]),
         [
-            " 2 1",
+            "   2  1",
         ],
     );
 
@@ -107,8 +108,8 @@ fn atom_types() {
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [5, 6]),
         [
-            " C N",
-            " 2 1",
+            "   C  N",
+            "   2  1",
         ],
     );
 }

@@ -1,9 +1,5 @@
 // Tests of `RawPoscar::validate`, which is one of the two
 // major ways to construct a `Poscar`.
-//
-// NOTE: Test cases which have a meaningful textual representation
-//       should also be in `tests/parse/invariants.yaml`, which probes
-//       similar validation logic in the parser.
 #![deny(unused)]
 
 extern crate poscar;
