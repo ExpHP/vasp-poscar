@@ -1,0 +1,272 @@
+- name: scale-is-missing
+  input: |
+    comment
+      1 0 0
+      0 1 0
+      0 0 1
+     1
+    Direct
+      0.0 0.0 0.0
+  # (this is something the crate explicitly checks for even
+  #  when it doesn't need to, because otherwise the actual
+  #  error would be even more inscrutable)
+  error: "2:5: too many floats on scale line"
+
+- name: scale-parse-error
+  input: |
+    comment
+     1x0
+      1.0 0.0 0.0
+      0.0 1.0
+      0.0 0.0 1.0
+     1
+    Direct
+      0.0 0.0 0.0
+  error: "2:2: " # stdlib error message
+
+- name: lattice-missing-float
+  input: |
+    comment
+     1.0
+      1.0 0.0 0.0
+      0.0 1.0
+      0.0 0.0 1.0
+     1
+    Direct
+      0.0 0.0 0.0
+  error: "4: expected three components"
+
+- name: lattice-parse-error
+  input: |
+    comment
+     1.0
+      1.0 0.0 0.0
+      0.0 1.0 0x0
+      0.0 0.0 1.0
+     1
+    Direct
+      0.0 0.0 0.0
+  error: "4:11: " # stdlib error message
+
+# there must be at least one atom type, because otherwise
+# we can't determine whether the empty line after the lattice
+# lines is the counts line or the symbols line.
+#
+# the file probably would've caused your favorite physics software
+# to segfault, anyways.
+- name: no-counts-1
+  input: |
+    comment
+     1.0
+      1.0 0.0 0.0
+      0.0 1.0 0.0
+      0.0 0.0 1.0
+
+    Direct
+  error: "6: expected at least one"
+
+# same, except this one has a "symbols" line
+- name: no-counts-2
+  input: |
+    comment
+     1.0
+      1.0 0.0 0.0
+      0.0 1.0 0.0
+      0.0 0.0 1.0
+
+
+    Direct
+  error: "6: expected at least one"
+
+# Swapping the counts and symbols lines is a devilish mistake to make;
+# The symbols will get reinterpreted as a flag line.
+#
+# The best we can hope for is merely that SOME error occurs.
+# ANY error, as long as it doesn't get through.
+- name: counts-before-symbols-1
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    1 1
+    C N
+    Direct
+      0 0 0
+      0 0 0
+  # NOTE: Room for improvement
+  error: "8:1: " # stdlib error message; tries to parse "Direct" as f64
+
+# Even more devilish; the 'S' is seen as a selective dynamics line!
+- name: counts-before-symbols-2
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    1 1
+    S N
+    Direct
+      0 0 0
+      0 0 0
+  # NOTE: Room for improvement
+  error: "9: expected 3 boolean flags"
+
+- name: counts-before-symbols-3
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    1 1
+    S N
+    Selective Dynamics
+    Direct
+      0 0 0
+      0 0 0
+  # NOTE: Room for improvement
+  error: "9:1: " # stdlib error message; tries to parse "Direct" as f64
+
+- name: wrong-num-counts-1
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    S N
+    2
+    Direct
+      0 0 0
+      0 0 0
+  error: "7:1: Inconsistent number of counts"
+
+- name: wrong-num-counts-2
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    S
+    1 1
+    Direct
+      0 0 0
+      0 0 0
+  error: "7:1: Inconsistent number of counts"
+
+- name: wrong-num-counts-tricky
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    S N
+    2 ImTerriblySorryButThisIsActuallyAFreeformComment
+    Direct
+      0 0 0
+      0 0 0
+  error: "7:1: Inconsistent number of counts"
+
+- name: wrong-num-counts-tricky-succeed
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    S
+    2 ImTerriblySorryButThisIsActuallyAFreeformComment
+    Direct
+      0 0 0
+      0 0 0
+  output: |
+    comment
+      1.0
+        1.0 0.0 0.0
+        0.0 1.0 0.0
+        0.0 0.0 1.0
+       S
+       2
+    Direct
+      0.0 0.0 0.0
+      0.0 0.0 0.0
+
+# Zero atoms would make it ill-defined whether pmg-style symbols
+# are present, and would probably cause your favorite program
+# to segfault anyways; you aren't missing out.
+- name: num-atoms-is-zero
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    0 0
+    Direct
+  error: "6:1: There must be at least one atom"
+
+- name: coords-fewer-than-three
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    2
+    Direct
+      0 0
+      0.5 0.5 0.5
+  error: "8: expected 3 coordinate"
+
+- name: dynamics-fewer-than-three
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    2
+    Selective Dynamics
+    Direct
+      0 0 0 T T
+      0 0 0 T T T
+  error: "9: expected 3 boolean flags"
+
+- name: coords-parse-failure
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    2
+    Direct
+      0 0x0 0
+      0.5 0.5 0.5
+  error: "8:5: " # stdlib error message
+
+- name: dynamics-parse-failure
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    2
+    Selective Dynamics
+    Direct
+      0 0 0 T hamburger T
+      0 0 0 T T T
+  error: "9:11: invalid Fortran logical value"
+
+
+
+
+
+
+# TODO early EOF examples
