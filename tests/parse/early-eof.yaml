@@ -1,0 +1,114 @@
+# Input files that terminate too early.
+#
+# Currently, all such cases are handled by exactly the same logic,
+# making this file rather boring... however, this is not necessarily
+# true for every possible implementation, given the nature of the
+# file format.
+
+- name: eof-at-1-oclock
+  input: |
+  error: "1: unexpected end of file"
+
+- name: eof-at-2-oclock
+  input: |
+    comment
+  error: "2: unexpected end of file"
+
+- name: eof-at-3-oclock
+  input: |
+    comment
+    1
+  error: "3: unexpected end of file"
+
+- name: eof-mid-lattice
+  input: |
+    comment
+    1
+    1 0 0
+  error: "4: unexpected end of file"
+
+- name: eof-at-6-oclock
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+  error: "6: unexpected end of file"
+
+- name: eof-after-symbols
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    C
+  error: "7: unexpected end of file"
+
+- name: eof-after-counts
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    1
+  error: "7: unexpected end of file"
+
+- name: eof-after-symbols-counts
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    C
+    1
+  error: "8: unexpected end of file"
+
+- name: eof-after-s-flag-line
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    1
+    s
+  error: "8: unexpected end of file"
+
+- name: eof-after-c-flag-line
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    1
+    c
+  error: "8: unexpected end of file"
+
+- name: eof-after-s-c-flag-line
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    1
+    s
+    c
+  error: "9: unexpected end of file"
+
+- name: eof-mid-coordinates
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    2
+    c
+    0.0 0.0 0.0
+  error: "9: unexpected end of file"

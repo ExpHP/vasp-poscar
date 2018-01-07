@@ -263,10 +263,3 @@
       0 0 0 T hamburger T
       0 0 0 T T T
   error: "9:11: invalid Fortran logical value"
-
-
-
-
-
-
-# TODO early EOF examples
