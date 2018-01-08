@@ -101,7 +101,7 @@
     c
   error: "9: unexpected end of file"
 
-- name: eof-mid-coordinates
+- name: eof-mid-positions
   input: |
     comment
     1
@@ -112,3 +112,32 @@
     c
     0.0 0.0 0.0
   error: "9: unexpected end of file"
+
+- name: eof-after-non-blank-velocity-control-line
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    2
+    c
+    0.0 0.0 0.0
+    0.0 0.0 0.0
+    direct
+  error: "11: unexpected end of file"
+
+- name: eof-mid-velocities
+  input: |
+    comment
+    1
+    1 0 0
+    0 1 0
+    0 0 1
+    2
+    c
+    0.0 0.0 0.0
+    0.0 0.0 0.0
+    direct
+    0.0 0.0 0.0
+  error: "12: unexpected end of file"

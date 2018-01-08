@@ -47,6 +47,9 @@
     direct
       0.0 0.0 0.0    T T T  and these freeform comments right here are
       0.25 0.25 0.25 T T T  actually (ab)used by some tools to store symbols
+
+      0.0 0.0 0.0     sigh are we really going to support them
+      0.5 0.0 0.5     even here as well???
   output: |
     cubic diamond
       3.7
@@ -59,3 +62,6 @@
     Direct
       0.0 0.0 0.0 T T T
       0.25 0.25 0.25 T T T
+
+      0.0 0.0 0.0
+      0.5 0.0 0.5

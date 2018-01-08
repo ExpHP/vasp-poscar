@@ -179,3 +179,46 @@ fn dynamics() {
         ],
     );
 }
+
+#[test]
+fn velocities() {
+    let mut poscar = boring_poscar();
+    poscar.group_counts = vec![2, 1];
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
+
+    poscar.velocities = None;
+    {
+        let poscar = poscar.clone().validate().unwrap();
+        assert_eq!(10, format!("{}", poscar).lines().count());
+    }
+
+    poscar.velocities = Some(Coords::Frac(vec![[0.1; 3]; 3]));
+    {
+        let poscar = poscar.clone().validate().unwrap();
+        assert_eq!(14, format!("{}", poscar).lines().count());
+        assert_eq!(
+            poscar_lines!(poscar, [10, 11, 12, 13]),
+            [
+                "",
+                "  0.1 0.1 0.1",
+                "  0.1 0.1 0.1",
+                "  0.1 0.1 0.1",
+            ],
+        );
+    }
+
+    poscar.velocities = Some(Coords::Cart(vec![[0.1; 3]; 3]));
+    {
+        let poscar = poscar.clone().validate().unwrap();
+        assert_eq!(14, format!("{}", poscar).lines().count());
+        assert_eq!(
+            poscar_lines!(poscar, [10, 11, 12, 13]),
+            [
+                "Cartesian",
+                "  0.1 0.1 0.1",
+                "  0.1 0.1 0.1",
+                "  0.1 0.1 0.1",
+            ],
+        );
+    }
+}

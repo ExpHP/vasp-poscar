@@ -278,3 +278,19 @@
       0 0 0 T hamburger T
       0 0 0 T T T
   error: "9:11: invalid Fortran logical value"
+
+- name: velocity-parse-failure
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    2
+    Direct
+      0 0 0
+      0.5 0.5 0.5
+
+      0 0x0 0
+      0.5 0.5 0.5
+  error: "11:5: " # stdlib error message

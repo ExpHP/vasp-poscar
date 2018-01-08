@@ -77,6 +77,8 @@ fn scale() {
 
 #[test]
 fn lattice() {
+    // NOTE: uses nontrivial scale to check that it is
+    //       not incorporated into the lattice
     assert_eq!(
         poscar!(b"
             comment
@@ -135,6 +137,8 @@ fn atom_types() {
 #[test]
 fn positions() {
     assert_eq!(
+        // NOTE: uses nontrivial scale and lattice to check
+        //       that these are not incorporated into the positions
         poscar!(b"
             comment
             2.45
@@ -212,5 +216,92 @@ fn dynamics() {
             2 2.25 2.5
         ").unwrap().raw().dynamics,
         None,
+    );
+}
+
+#[test]
+fn velocities() {
+    assert_eq!(
+        // NOTE: uses nontrivial scale and lattice to check
+        //       that these are not incorporated into the velocities
+        poscar!(b"
+            comment
+            2.45
+            1.25 2.5 3.0
+            -1.25 2.5 3.0
+            1.25 -2.5 3.0
+            2
+            Cartesian
+            0 0 0
+            0 0 0
+        ").unwrap().raw().velocities,
+        None,
+    );
+
+    assert_eq!(
+        // NOTE: uses nontrivial scale and lattice to check
+        //       that these are not incorporated into the velocities
+        poscar!(b"
+            comment
+            2.45
+            1.25 2.5 3.0
+            -1.25 2.5 3.0
+            1.25 -2.5 3.0
+            2
+            Cartesian
+            0 0 0
+            0 0 0
+            Cartesian
+            0 0.25 0.5
+            1 1.25 1.5
+        ").unwrap().raw().velocities,
+        Some(Coords::Cart(vec![
+            [0.0, 0.25, 0.5],
+            [1.0, 1.25, 1.5],
+        ])),
+    );
+
+    assert_eq!(
+        poscar!(b"
+            comment
+            2.45
+            1.25 2.5 3.0
+            -1.25 2.5 3.0
+            1.25 -2.5 3.0
+            2
+            Cartesian
+            0 0 0
+            0 0 0
+            Direct
+            0 0.25 0.5
+            1 1.25 1.5
+        ").unwrap().raw().velocities,
+        Some(Coords::Frac(vec![
+            [0.0, 0.25, 0.5],
+            [1.0, 1.25, 1.5],
+        ])),
+    );
+
+    // A blank line meaning "Direct".
+    // This is actually what our crate does in its own output. (why? vaspdiddit)
+    assert_eq!(
+        poscar!(b"
+            comment
+            2.45
+            1.25 2.5 3.0
+            -1.25 2.5 3.0
+            1.25 -2.5 3.0
+            2
+            Cartesian
+            0 0 0
+            0 0 0
+
+            0 0.25 0.5
+            1 1.25 1.5
+        ").unwrap().raw().velocities,
+        Some(Coords::Frac(vec![
+            [0.0, 0.25, 0.5],
+            [1.0, 1.25, 1.5],
+        ])),
     );
 }
