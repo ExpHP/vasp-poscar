@@ -31,11 +31,11 @@ Direct
 ```rust
 extern crate vasp_poscar;
 
-use vasp_poscar::ScaleLine;
+use vasp_poscar::{Poscar, ScaleLine};
 
 // read from a BufRead instance, such as &[u8] or BufReader<File>
 let file = io::BufReader::new(File::open("POSCAR")?);
-let poscar = vasp_poscar::from_reader(file)?;
+let poscar = Poscar::from_reader(file)?;
 
 // get a RawPoscar object with public fields you can freely match on and manipulate
 let mut poscar = poscar.raw();
