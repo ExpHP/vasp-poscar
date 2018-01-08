@@ -98,3 +98,18 @@ POSCAR has some optional sections that are probably mostly really only used by V
 `vasp-poscar` is **not really a crate for doing science.**  It will *never* provide things like symmetry analysis, primitive structure search, supercell construction, perturbation of positions, or cutting across a plane, etc. It won't tell you what the masses of your ions are, and it *most certainly won't __ever__ attempt to automatically search for a file called `POTCAR` in the same directory to figure out things like atomic numbers.* (you know who you are...).
 
 These things are simply not its job.  The expectation is that the data read by `vasp-poscar` may be used to construct an instance of a more versatile---and more opinionated---`Structure` type implemented in another crate.  (of course, if you are designing such a type, you are invited to depend on this crate as a parsing backend!)
+
+## License
+
+Licensed under either of
+
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

@@ -2,6 +2,7 @@
 authors = ["Michael Lamparski <diagonaldevice@gmail.com>"]
 name = "vasp-poscar"
 version = "0.1.0"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 dtoa = "0.4.2"
