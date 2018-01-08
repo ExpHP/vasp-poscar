@@ -1,19 +1,23 @@
 
-// (Invariant: There is at least one atom.)
 #[derive(Debug, Clone)]
 pub struct Poscar(pub(crate) RawPoscar);
 
+/// Represents a POSCAR file.
+///
+/// Currently, the only API provided on this type is the `raw` method, which
+/// produces an object you can manipulate directly.
 impl Poscar {
     /// Convert into a form with public data members that you can freely match
     /// against and unpack.
     ///
     /// When you are done modifying the object, you may call `.validate()`
-    /// to turn it back into a Poscar. (or you can keep all the data for yourself
-    /// if you want!)
+    /// to turn it back into a Poscar. (or you can just keep all the data to yourself.
+    /// We don't mind!)
     ///
     /// Currently, this is the most versatile way of manipulating a Poscar object,
-    /// though it may not be the most stable or convenient. In the future, more
-    /// helper operations may be provided on `Poscar`.
+    /// though it may not be the most stable or convenient. **Be prepared for breaking
+    /// changes to affect code using this method.** In the future, stabler alternatives
+    /// for common operations may be provided on `Poscar` itself.
     pub fn raw(self) -> RawPoscar { self.0 }
 
     // pub fn comment(&self) -> &str { &self.comment }
@@ -43,19 +47,20 @@ impl Poscar {
     // pub fn velocities(&self) -> Option<Coords<Vec<[f64; 3]>>> { TODO }
     // pub fn symbols(&self) -> Option<Symbols> { TODO }
     // pub fn symbol_groups(&self) -> Option<SymbolGroups> { TODO }
-
 }
 
 /// Basic representation of a POSCAR with public data members.
 ///
-/// The mapping between its fields and those of the the POSCAR file
-/// should be braindead obvious.  Note in particular that the scale
-/// line is preserved rather than incorporated into the structure
-///
 /// All members are public to allow you to construct it.
-/// Be prepared for breakage as more fields are added;
-/// you are advised to limit your usage of this type to small,
-/// self-contained functions.
+/// The mapping between its fields and those of the the POSCAR file
+/// should be *dead obvious.*  Note in particular that the scale
+/// line is preserved rather than incorporated into the structure.
+///
+/// This type brings simplicity at the cost of stability.
+/// **Be prepared for breakage** as more fields are added;
+/// for now, you are advised to limit your usage of this type to
+/// self-contained functions. (e.g. conversions to and from a
+/// datatype of your own)
 #[derive(Debug, Clone)]
 pub struct RawPoscar {
     pub comment: String,
@@ -110,7 +115,7 @@ pub struct RawPoscar {
 /// Covers all the reasons why `RawPoscar::validate` might get mad at you.
 ///
 /// The variants are public so that by looking at the docs you can see all the possible errors.
-/// You have no good reason to write code that matches on this.
+/// That said, you have no good reason to write code that matches on this.
 ///
 /// ...right?
 #[derive(Debug, Fail)]
@@ -152,6 +157,7 @@ impl RawPoscar {
     /// Convert into a `Poscar` object after checking its invariants.
     ///
     /// To see what those invariants are, check the docs for ValidationError.
+    // TODO: Link
     pub fn validate(self) -> Result<Poscar, ValidationError> {
         if let Some(ref group_symbols) = self.group_symbols {
             if self.group_counts.len() != group_symbols.len() {
@@ -172,6 +178,8 @@ impl RawPoscar {
         let n = self.group_counts.iter().sum::<usize>();
 
         g_ensure!(n > 0, ValidationError::NoAtoms);
+
+        // FIXME need to forbid spaces in symbols
 
         if self.coords.as_ref().raw().len() != n {
             g_bail!(ValidationError::WrongLength("coords", n));
@@ -254,7 +262,8 @@ impl RawPoscar {
 //     /// is zero or even negative; they will be left as is. Be aware of the fact
 //     /// that VASP prohibits vectors with a negative determinant, and that other
 //     /// poorly-written software may do things to your structure (such as changing
-//     /// its chirality) in an attempt to get rid of negative determinants.
+//     /// its chirality or permuting axes) in an attempt to get rid of negative
+//     /// determinants.
 //     #[inline] pub fn set_raw_lattice_vectors(&self, vectors: &[[f64; 3]; 3]) { self.lattice = *vectors; }
 
 //     /// Get the scale line as written (either a scale or the overall volume).

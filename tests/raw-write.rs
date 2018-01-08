@@ -5,8 +5,8 @@
 //!
 //! Is incidentally sensitive to output format.
 
-extern crate poscar;
-use ::poscar::{RawPoscar, ScaleLine, Coords};
+extern crate vasp_poscar;
+use ::vasp_poscar::{RawPoscar, ScaleLine, Coords};
 
 fn boring_poscar() -> RawPoscar {
     RawPoscar {
@@ -29,7 +29,7 @@ fn boring_poscar() -> RawPoscar {
 macro_rules! poscar_lines {
     ($poscar:expr, [$($i:expr),+ $(,)*]) => {{
         let mut bytes = vec![];
-        ::poscar::to_writer(&mut bytes, &$poscar).unwrap();
+        ::vasp_poscar::to_writer(&mut bytes, &$poscar).unwrap();
 
         let s = String::from_utf8(bytes).unwrap();
 

@@ -3,7 +3,11 @@ use ::std::fmt;
 use ::std::io::prelude::*;
 use ::{Poscar, RawPoscar, ScaleLine, Coords};
 
-/// Writes a POSCAR to an open file.
+/// Writes a POSCAR to an io::Write instance.
+///
+/// **This method does not panic.**  All conditions required for the
+/// successful creation of an output file are already enforced as
+/// invariants of the Poscar datatype.
 pub fn to_writer<W>(
     mut w: W,
     poscar: &Poscar,

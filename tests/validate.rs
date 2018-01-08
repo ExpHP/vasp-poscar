@@ -2,8 +2,8 @@
 // major ways to construct a `Poscar`.
 #![deny(unused)]
 
-extern crate poscar;
-use poscar::{RawPoscar, Coords, ScaleLine, ValidationError};
+extern crate vasp_poscar;
+use vasp_poscar::{RawPoscar, Coords, ScaleLine, ValidationError};
 
 #[macro_use]
 mod common;

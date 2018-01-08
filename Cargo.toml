@@ -1,6 +1,6 @@
 [package]
 authors = ["Michael Lamparski <diagonaldevice@gmail.com>"]
-name = "poscar"
+name = "vasp-poscar"
 version = "0.1.0"
 
 [dependencies]

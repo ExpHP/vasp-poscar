@@ -7,13 +7,13 @@
 
 #[macro_use]
 extern crate indoc;
-extern crate poscar;
-use ::poscar::{ScaleLine, Coords};
+extern crate vasp_poscar;
+use ::vasp_poscar::{ScaleLine, Coords};
 
 macro_rules! poscar {
     ($s:expr) => {{
         let doc: &[u8] = indoc!($s); // ensure arrayness is coerced away
-        ::poscar::from_reader(doc)
+        ::vasp_poscar::from_reader(doc)
     }}
 }
 
