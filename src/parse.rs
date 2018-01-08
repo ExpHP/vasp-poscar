@@ -71,6 +71,7 @@ mod error {
 pub(crate) struct Lines<I> {
     path: Option<Rc<PathBuf>>,
     cur: usize,
+    // (fused to guarantee that scanning for EOF is an idempotent operation)
     lines: ::std::iter::Fuse<I>,
 }
 
