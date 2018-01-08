@@ -83,7 +83,7 @@ impl Text {
     fn into_string(self) -> String
     { match self {
         Text::Blob(s) => s,
-        Text::Lines(lines) => lines.join("\n"),
+        Text::Lines(lines) => lines.join("\n") + "\n",
     }}
 }
 

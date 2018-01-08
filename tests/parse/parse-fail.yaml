@@ -294,3 +294,39 @@
       0 0x0 0
       0.5 0.5 0.5
   error: "11:5: " # stdlib error message
+
+# this test case has at least two blank lines after positions
+# to make it 100% clear that no velocities are present
+- name: trailing-garbage-after-positions
+  input: |
+    comment
+      1
+        1 0 0
+        0 1 0
+        0 0 1
+       1
+    Direct
+      0 0 0
+
+
+      b
+  error: "11:3: expected end of file"
+
+# this test case has at least two blank lines after velocities
+# to make it 100% clear that the predictor corrector is not present
+- name: trailing-garbage-after-velocities
+  input: |
+    comment
+      1
+        1 0 0
+        0 1 0
+        0 0 1
+       1
+    Direct
+      0 0 0
+
+      0 0 0
+
+
+      b
+  error: "13:3: expected end of file"

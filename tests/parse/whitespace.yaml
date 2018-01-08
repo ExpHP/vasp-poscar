@@ -19,9 +19,9 @@
   - "  comment \t "
   # (the rest is normalized away)
   - "  1.0"
-  - "   1.0 0.0 0.0"
-  - "   0.0 1.0 0.0"
-  - "   0.0 0.0 1.0"
+  - "    1.0 0.0 0.0"
+  - "    0.0 1.0 0.0"
+  - "    0.0 0.0 1.0"
   - "   2"
   - "Selective Dynamics"
   - "Direct"

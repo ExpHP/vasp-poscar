@@ -86,11 +86,13 @@
   - "   1 +1"
   - "Direct"
   - "  0.0 0.0 0.0"
+  # This next line gets parsed as the control line for velocity.
+  # I kid you not.  Don't you just love this format?
+  # (FIXME: this should eventually generate some sort of warning via
+  #         the log crate, which we should somehow intercept in the harness)
   - "  0.0 0.0 0.0"
-  # TODO: Maybe we can log a warning here?
-  # FIXME: This error sucks for other reasons.  The actual cause of failure
-  #        is that there are too many positions. (it expects one)
-  error: "9:1: expected EOF"
+  # ...and then it dies because it expects one data line for velocity.
+  error: "10: unexpected end of file"
 
 - name: fortran-logical
   input:

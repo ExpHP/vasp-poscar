@@ -71,7 +71,7 @@ mod error {
 pub(crate) struct Lines<I> {
     path: Option<Rc<PathBuf>>,
     cur: usize,
-    lines: I,
+    lines: ::std::iter::Fuse<I>,
 }
 
 // string with span info for errors
@@ -91,7 +91,7 @@ where
     pub(crate) fn new<P: AsRef<Path>>(lines: I, path: Option<P>) -> Self
     { Self {
         path: path.map(|p| Rc::new(p.as_ref().to_owned())),
-        lines,
+        lines: lines.fuse(),
         cur: 0,
     }}
 
@@ -111,6 +111,15 @@ where
 
         self.cur += 1;
         Ok(Spanned { path, line, col, s })
+    }
+
+    fn expect_blank_until_eof(&mut self) -> Result<(), ::failure::Error> {
+        while let Ok(line) = self.next() {
+            if let Some(word) = line.words().next() {
+                bail!(word.error("expected end of file"));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -354,6 +363,38 @@ impl Poscar {
 fn parse_unsigned(s: &str) -> Result<u64, ParseUnsignedError>
 { let Unsigned(x) = s.parse()?; Ok(x) }
 
+enum CoordLineType {
+    // First character is in "cCkK".
+    Cartesian,
+    // Control character is in "dD".
+    // Thank you for not making us go bald.
+    Direct,
+    // A space is followed by not-a-space.
+    // It means direct, but it's also EXTREMELY FISHY and deserves a warning.
+    IndentedText,
+    // A string of nothing but whitespace.
+    // It means direct, but may also just be trailing crud at the file end.
+    EmptyOrWhitespace,
+    // A control character that isn't whitespace or in "dD".
+    // It means direct, but it's also kinda fishy.
+    SuspiciouslyDirect,
+}
+
+fn classify_coord_line(mut line: &str) -> CoordLineType {
+    line = line.trim_right();
+
+    if line.is_empty() {
+        return CoordLineType::EmptyOrWhitespace;
+    }
+
+    match line.bytes().next().unwrap() {
+        b'c' | b'C' | b'k' | b'K' => CoordLineType::Cartesian,
+        b'd' | b'D' => CoordLineType::Direct,
+        c if is_ascii_whitespace(c) => CoordLineType::IndentedText,
+        _ => CoordLineType::SuspiciouslyDirect,
+    }
+}
+
 fn _from_reader<R, P>(f: R, path: Option<P>) -> Result<Poscar, ::failure::Error>
 where R: BufRead, P: AsRef<Path>,
 {
@@ -453,70 +494,174 @@ where R: BufRead, P: AsRef<Path>,
         (group_symbols, group_counts, n)
     };
 
-    // flags
-    let (has_direct, has_selective_dynamics);
-    {
-        let line = lines.next()?;
-
-        let line = match line.control_char() {
-            Some('s') |
-            Some('S') => { has_selective_dynamics = true; lines.next()? },
-            _ => { has_selective_dynamics = false; line },
-        };
-
-        has_direct = match line.control_char() {
-            Some('c') | Some('C') | Some('k') | Some('K') => false,
-
-            // Technically speaking, according to the VASP docs, *anything else*
-            // should fall under the umbrella of direct coordinates....
-            // But a line like "  Cartesian" is just too damn suspicious.
-            Some(' ') if !line.as_str().trim().is_empty() => {
-                // TODO: Log warning via log
-                true
-            },
-
-            _ => true,
-        };
-        // rest is freeform comment
-    };
-
     let (positions, dynamics) = {
-        let mut positions = vec![];
-        let mut dynamics = match has_selective_dynamics {
-            true => Some(vec![]),
-            false => None,
+        // flag lines
+        let (has_direct, has_selective_dynamics);
+        {
+            let line = lines.next()?;
+
+            let line = match line.control_char() {
+                Some('s') |
+                Some('S') => { has_selective_dynamics = true; lines.next()? },
+                _ => { has_selective_dynamics = false; line },
+            };
+
+            has_direct = match classify_coord_line(line.as_str()) {
+                CoordLineType::Cartesian => false,
+                // FIXME: Some of these (especially IndendedText) should log warnings
+                //        via the log crate
+                CoordLineType::Direct |
+                CoordLineType::SuspiciouslyDirect |
+                CoordLineType::EmptyOrWhitespace |
+                CoordLineType::IndentedText => true,
+            };
+            // rest is freeform comment
         };
 
-        for _ in 0..n {
-            let line = lines.next()?;
-            let mut words = line.words();
+        // data lines
+        let (positions, dynamics) = {
+            let mut positions = vec![];
+            let mut dynamics = match has_selective_dynamics {
+                true => Some(vec![]),
+                false => None,
+            };
 
-            positions.push(arr_3![_ => words.next_or_err("expected 3 coordinates")?.parse()?]);
+            for _ in 0..n {
+                let line = lines.next()?;
+                let mut words = line.words();
 
-            if let Some(selective_dynamics) = dynamics.as_mut() {
-                selective_dynamics.push({
-                    arr_3![_ => {
-                        words.next_or_err("expected 3 boolean flags")?.parse::<Logical>()?.0
-                    }]
-                })
-            }
-            // rest is freeform comment
+                positions.push(arr_3![_ => words.next_or_err("expected 3 coordinates")?.parse()?]);
+
+                if let Some(selective_dynamics) = dynamics.as_mut() {
+                    selective_dynamics.push({
+                        arr_3![_ => {
+                            words.next_or_err("expected 3 boolean flags")?.parse::<Logical>()?.0
+                        }]
+                    })
+                }
+                // rest is freeform comment
+            };
+
+            (positions, dynamics)
+        };
+
+        let positions = match has_direct {
+            true  => Coords::Frac(positions),
+            false => Coords::Cart(positions),
         };
 
         (positions, dynamics)
     };
 
-    let positions = match has_direct {
-        true  => Coords::Frac(positions),
-        false => Coords::Cart(positions),
-    };
+    // Even though it has a structure extremely similar to coordinate data,
+    // velocities are parsed using completely separate logic, because... well...
+    // they kind of have to be.  We have a big new concern, which is:
+    //
+    //    "are the velocities present? Or does the file end here?"
+    //
+    // and it's a goddamn tough question.
+    //
+    // NOTE: uses 'loop { break { ... }}' as a poor-man's labeled block.
+    let velocities = 'velocities: loop { break {
 
-    let velocities = None; // FIXME
+        // does the file just end?
+        let line = match lines.next() {
+            Ok(line) => line,
+            Err(_) => break 'velocities None,
+        };
 
-    // we don't support any other junk
-    while let Ok(line) = lines.next() {
-        ensure!(line.as_str().trim().is_empty(), line.error("expected EOF"));
-    }
+        #[derive(Copy, Clone)]
+        enum PresenceIs { Required, Possible }
+
+        // We have either:
+        // * a trailing blank line (possibly the first of many)
+        // * the control line for the velocity coordinates
+        let (has_direct, status) = match classify_coord_line(line.as_str()) {
+            CoordLineType::Cartesian => (false, PresenceIs::Required),
+
+            // FIXME: Some of these (especially IndendedText) should log warnings
+            //        via the log crate
+            CoordLineType::Direct |
+            CoordLineType::SuspiciouslyDirect |
+            CoordLineType::IndentedText => (true, PresenceIs::Required),
+
+            // If the line is empty, we can't quite be sure yet whether
+            // it's a blank line that implies Direct, or if it is just
+            // trailing whitespace.
+            CoordLineType::EmptyOrWhitespace => (true, PresenceIs::Possible),
+        };
+
+        // Try to eagerly read one more line.
+        let line = match (lines.next(), status) {
+            (Err(e), PresenceIs::Required) => {
+                // File ends immediately after a non-blank control line.
+                // In theory, that would be valid for a structure with
+                // zero atoms...
+
+                // ....however, we already forbid such structures.
+                bail!(e); // emit the "unexpected EOF" error
+            },
+            (Err(_), PresenceIs::Possible) => {
+                // There was simply one blank line after the positions.
+                // There are no velocities.
+                break 'velocities None;
+            },
+            // File does not end. We remain in limbo.
+            (Ok(line), _) => line,
+        };
+
+        // We now hold in our possession one of the following:
+        // - the first out of N lines of velocity data
+        // - a trailing blank line (possibly one of many)
+        // - a malformed file
+        match (line.as_str().trim(), status) {
+            ("", PresenceIs::Possible) => {
+                // Another empty line. We can safely say there are no velocities.
+
+                // Nothing else may possibly exist in the file, since the predictor
+                // corrector is not present unless velocity is.
+                // Ensure that an error is generated if this is not the case.
+                lines.expect_blank_until_eof()?;
+
+                None
+            },
+
+            (_, PresenceIs::Required) |
+            (_, PresenceIs::Possible) => {
+                // Velocities must be present!
+
+                // Prepare to read N-1 more lines
+                let one_less = n.checked_sub(1).expect("BUG"); // (we forbade 0 atoms)
+                let lines = (0..one_less).map(|_| lines.next());
+                // Put back the one we already read, for a total of N lines
+                let lines = ::std::iter::once(Ok(line)).chain(lines);
+
+                let velocities = lines.map(|line| {
+                    let line = line?; // EOF?
+                    let mut words = line.words();
+                    Ok(arr_3![_ => {
+                        words.next_or_err("expected 3 coordinates")?.parse()?
+                    }])
+                }).collect::<Result<Vec<_>, ::failure::Error>>()?;
+
+                let velocities = match has_direct {
+                    true  => Coords::Frac(velocities),
+                    false => Coords::Cart(velocities),
+                };
+
+                Some(velocities)
+            }
+        }
+    }};
+
+    // NOTE:
+    // - All features beyond this point (e.g. predictor corrector)
+    //   are only allowed to be present if velocities are present.
+    // - At this point, if `velocities` is None, then we have read
+
+    // All trailing blanks were handled inside the velocity code block,
+    // so the file should be absolutely empty.
+    lines.expect_blank_until_eof()?;
 
     Ok(RawPoscar {
         comment, scale, positions, lattice_vectors,
