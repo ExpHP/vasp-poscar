@@ -34,7 +34,6 @@ fn boring_poscar() -> RawPoscar {
     }
 }
 
-
 #[test]
 fn comment_newline() {
     let mut poscar = boring_poscar();
@@ -51,7 +50,6 @@ fn comment_newline() {
         poscar.clone().validate(),
     );
 }
-
 
 #[test]
 fn bad_scale() {
@@ -91,17 +89,48 @@ fn no_atoms() {
 }
 
 #[test]
+fn symbol_whitespace() {
+    let mut poscar = boring_poscar();
+    poscar.positions = Coords::Cart(vec![[0.0; 3]; 3]);
+    poscar.group_counts = vec![1, 1, 1];
+    poscar.group_symbols = Some(vec!["C".into(), "N".into(), "O".into()]);
+
+    let bad_syms = vec![
+        // leading digit
+        "0om",
+        // embedded whitespace
+        "C C", "C\t", "\rC", "C\nC",
+        // empty
+        "",
+    ];
+
+    assert_matches!(
+        Ok(_),
+        poscar.clone().validate(),
+    );
+    for bad in bad_syms {
+        poscar.group_symbols.as_mut().unwrap()[1] = bad.into();
+        assert_matches!(
+            Err(ValidationError::InvalidSymbol(Some(ref sym))) if sym == bad,
+            poscar.clone().validate(),
+        );
+    }
+}
+
+#[test]
 fn inconsistent_num_groups() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
     poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
 
+    // too few symbols
     poscar.group_symbols = Some(vec!["C".into()]);
     assert_matches!(
         Err(ValidationError::InconsistentNumGroups),
         poscar.clone().validate(),
     );
 
+    // too many symbols
     poscar.group_symbols = Some(vec!["C".into(); 3]);
     assert_matches!(
         Err(ValidationError::InconsistentNumGroups),

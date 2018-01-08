@@ -78,6 +78,21 @@
     Direct
   error: "6: expected at least one"
 
+- name: symbol-leading-digit
+  input: |
+    comment
+     1
+      1 0 0
+      0 1 0
+      0 0 1
+    C 1N O
+    1 1 1
+    Direct
+      0 0 0
+      0 0 0
+      0 0 0
+  error: "6:3: invalid symbol"
+
 # Swapping the counts and symbols lines is a devilish mistake to make;
 # The symbols will get reinterpreted as a flag line.
 #

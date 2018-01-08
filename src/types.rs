@@ -65,6 +65,15 @@ pub enum ValidationError {
     /// The comment line is more than one line.
     #[fail(display = "the comment may not contain a newline")]
     NewlineInComment,
+    /// A requirement on `group_symbols` was violated.
+    ///
+    /// There are a few more restrictions in addition to the no-leading-digit
+    /// restriction mentioned in format.md, in order to ensure roundtripping:
+    /// * A symbol may not be the empty string
+    /// * A symbol may not contain whitespace
+    // (NOTE: `None` when the specific problematic symbol could not be identified.)
+    #[fail(display = "invalid symbol in group_symbols: {:?}", _0)]
+    InvalidSymbol(Option<String>),
     /// Poscar is required to have at least one atom.
     /// (this is to enable possible support for pymatgen-style labels in the future)
     #[fail(display = "at least one atom is required")]
@@ -121,7 +130,35 @@ impl RawPoscar {
 
         g_ensure!(n > 0, ValidationError::NoAtoms);
 
-        // FIXME need to forbid spaces in symbols
+        if let Some(group_symbols) = self.group_symbols.as_ref() {
+            // Check for conditions that we know are problematic.
+            for sym in group_symbols {
+                g_ensure!(
+                    ::parse::is_valid_symbol_for_symbol_line(sym.as_str()),
+                    ValidationError::InvalidSymbol(Some(sym.as_str().into())),
+                )
+            }
+
+            // *Just in case:* Use the same logic as the parser to retokenize the entire
+            // symbols line, thereby absolutely guaranteeing that it roundtrips.
+            // This check is guaranteed to remain sufficient even if we were to change
+            // the rules of tokenization.
+            use ::parse::Spanned;
+            let symbol_str = group_symbols.join(" ");
+            let spanned = Spanned::wrap_arbitrary(symbol_str);
+
+            let words = spanned.words().map(|x| x.as_str().to_string());
+            g_ensure!(
+                words.eq(group_symbols.iter().cloned()),
+                {
+                    // FIXME we should log a non-fatal internal error here since
+                    //       currently it is not expected for this branch to get
+                    //       entered (the individual checks per-symbol ought to
+                    //       be enough)
+                    ValidationError::InvalidSymbol(None)
+                },
+            );
+        }
 
         if self.positions.as_ref().raw().len() != n {
             g_bail!(ValidationError::WrongLength("positions", n));

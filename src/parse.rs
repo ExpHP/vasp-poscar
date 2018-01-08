@@ -134,6 +134,14 @@ fn is_ascii_whitespace(b: u8) -> bool {
 }
 
 impl<S: AsRef<str>> Spanned<S> {
+    /// Make a Spanned<S> with an arbitrary position.
+    ///
+    /// Only intended for use by e.g. validation code which wants to test an assumption
+    /// about how something will be parsed, using the same logic as the parser itself.
+    pub(crate) fn wrap_arbitrary(s: S) -> Self {
+        Spanned { path: None, line: 0, col: 0, s }
+    }
+
     pub(crate) fn as_str(&self) -> &str { self.s.as_ref() }
 
     pub(crate) fn slice(&self, range: Range<usize>) -> Spanned<&str>
@@ -298,6 +306,22 @@ impl FromStr for Unsigned {
     }
 }
 
+// Validates the restrictions placed on symbols for the symbol line. (see format.md)
+//
+// (this function is also used by `validate`, so it even checks conditions that
+//  are not possible to create during parsing, such as an empty string)
+pub(crate) fn is_valid_symbol_for_symbol_line(s: &str) -> bool {
+    // NOTE: keep in sync with the doc comment on ValidationError
+    if s.len() == 0 { return false; }
+    if s.bytes().any(|c| is_ascii_whitespace(c)) { return false; }
+
+    // no leading digit
+    match s.bytes().next().expect("BUG") {
+        b'0'...b'9' => false,
+        _ => true,
+    }
+}
+
 macro_rules! arr_3 {
     ($pat:pat => $expr:expr)
     => { [
@@ -398,7 +422,12 @@ where R: BufRead, P: AsRef<Path>,
 
             // this line must have symbols
             _ => {
-                let kinds = line.words().map(|s| s.as_str().to_string()).collect::<Vec<_>>();
+                let kinds = line.words().map(|word| {
+                    match is_valid_symbol_for_symbol_line(word.as_str()) {
+                        true => Ok(word.as_str().to_string()),
+                        false => Err(word.error("invalid symbol")),
+                    }
+                }).collect::<Result<Vec<_>, _>>()?;
                 (Some(kinds), lines.next()?)
             },
         };

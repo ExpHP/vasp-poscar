@@ -73,13 +73,11 @@ Three lines, each with three reals. *The rest of each line is a comment.*
 
 The optional symbols line before the counts line is detected by checking if the first non-whitespace character is a digit from `0` to `9`.
 
-Every whitespace-separated token on the symbols line is regarded as a symbol.
+Every whitespace-separated token on the symbols line is regarded as a symbol; *this line has no freeform comment.*  A symbol is forbidden from beginning with a digit; however, beyond that, they are not validated as elemental symbols. (Knowing the periodic table is considered "out of scope" for this crate.)
 
 Each whitespace-separacted word on the counts line *up until the first word which does not parse as an unsigned integer* (see the section on primitives) is regarded as a count. *The rest of the line is a freeform comment.*
 
 If symbols are provided, the number of counts and symbols must match.
-
-Symbols are not validated by this crate, which will accept any arbitrary string that does not contain whitespace. Knowing the periodic table is considered "out of scope" for this crate.
 
 * It is forbidden for the total atom count to be zero. (this is in anticipation of eventual support for pymatgen-style symbols embedded in the coordinate data comments)
 * It follows that the number of counts also must not be zero.
