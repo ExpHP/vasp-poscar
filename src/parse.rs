@@ -454,7 +454,7 @@ where R: BufRead, P: AsRef<Path>,
     let (group_symbols, group_counts, n) = {
         let line = lines.next()?;
 
-        // (make sure there is a non-whitespace char) TODO test case
+        // (make sure there is a non-whitespace char)
         let _ = line.words().next_or_err("expected at least one element or count")?;
 
         // New in vasp 5, a line with elemental symbols can appear before the line with counts.
@@ -658,10 +658,6 @@ where R: BufRead, P: AsRef<Path>,
     // NOTE:
     // - All features beyond this point (e.g. predictor corrector)
     //   are only allowed to be present if velocities are present.
-    // - At this point, if `velocities` is None, then we have read
-
-    // All trailing blanks were handled inside the velocity code block,
-    // so the file should be absolutely empty.
     lines.expect_blank_until_eof()?;
 
     Ok(RawPoscar {
