@@ -65,22 +65,25 @@ struct TestSpec {
 #[derive(Clone, Deserialize)]
 #[serde(untagged)]
 enum RawTest {
-    Success { name: Option<String>, input: Input, output: String },
-    Failure { name: Option<String>, input: Input, error: String },
+    Success { name: Option<String>, input: Text, output: Text },
+    Failure { name: Option<String>, input: Text, error: String },
 }
 
 #[derive(Clone, Deserialize)]
 #[serde(untagged)]
-enum Input {
-    Blob(String), // usually one big "|"-style YAML string
-    Lines(Vec<String>), // form sometimes used so that comments can be embedded
+enum Text {
+    // usually one big "|"-style YAML string
+    Blob(String),
+    // form sometimes used so that comments can be embedded
+    // and so that the editor can't strip trailing whitespace
+    Lines(Vec<String>),
 }
 
-impl Input {
+impl Text {
     fn into_string(self) -> String
     { match self {
-        Input::Blob(s) => s,
-        Input::Lines(lines) => lines.join("\n"),
+        Text::Blob(s) => s,
+        Text::Lines(lines) => lines.join("\n"),
     }}
 }
 
@@ -96,7 +99,7 @@ impl RawTest {
             RawTest::Failure { name, input, .. } => (name, input.into_string()),
         };
         let kind = match self {
-            RawTest::Success { output, .. } => TestKind::Success(output),
+            RawTest::Success { output, .. } => TestKind::Success(output.into_string()),
             RawTest::Failure { error, .. } => TestKind::Failure(error),
         };
         Test { name, input, kind }

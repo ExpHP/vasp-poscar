@@ -1,0 +1,32 @@
+# Tests crazy usage of whitespace
+
+- input:
+  - "  comment \t "
+  - "     1.0   "
+  - "    1.0   0.0 0.0"
+  - "  \t    0.0 1.0 0.0 \t"
+  - "0.0   0.0  1.0    "
+  - "   2"
+  - "S  elective Dynamics "
+  - "Direct"
+  - "0.0 0.0 0.0     T T T"
+  - "  0.0   0.0 0.0 T T T \t "
+  - "  \t \t"
+  - "   0.0   \t 0.0 0.0"
+  - "0.0 0.0 0.0  "
+  output:
+  # (the one place where whitespace is preserved)
+  - "  comment \t "
+  # (the rest is normalized away)
+  - "  1.0"
+  - "   1.0 0.0 0.0"
+  - "   0.0 1.0 0.0"
+  - "   0.0 0.0 1.0"
+  - "   2"
+  - "Selective Dynamics"
+  - "Direct"
+  - "  0.0 0.0 0.0 T T T"
+  - "  0.0 0.0 0.0 T T T"
+  - ""
+  - "  0.0 0.0 0.0"
+  - "  0.0 0.0 0.0"
