@@ -7,18 +7,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::std::io;
 use ::std::fmt;
 use ::{Poscar, RawPoscar, ScaleLine, Coords};
-
-/// Writes a POSCAR to an io::Write instance.
-///
-/// **This method does not panic.**  All conditions required for the
-/// successful creation of an output file are already enforced as
-/// invariants of the Poscar datatype.
-pub fn to_writer<W>(mut w: W, poscar: &Poscar) -> io::Result<()>
-where W: io::Write,
-{ write!(w, "{}", poscar) }
 
 impl fmt::Display for Poscar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result

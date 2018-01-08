@@ -18,7 +18,7 @@
 //! #
 //! # fn _main() -> Result<(), Never> {Ok({
 //!
-//! use vasp_poscar::ScaleLine;
+//! use vasp_poscar::{Poscar, ScaleLine};
 //!
 //! const EXAMPLE: &'static str = "\
 //! cubic diamond
@@ -34,7 +34,7 @@
 //! ";
 //!
 //! // read from a BufRead instance, such as &[u8] or BufReader<File>
-//! let poscar = vasp_poscar::from_reader(EXAMPLE.as_bytes())?;
+//! let poscar = Poscar::from_reader(EXAMPLE.as_bytes())?;
 //!
 //! // get a RawPoscar object with public fields you can freely match on and manipulate
 //! let mut poscar = poscar.raw();
@@ -78,8 +78,6 @@ mod types;
 mod write;
 
 pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
-pub use parse::{from_path, from_reader};
-pub use write::{to_writer};
 
 pub use types::ValidationError;
 pub use parse::ParseError;

@@ -16,6 +16,7 @@ extern crate left_pad;
 use ::std::fs;
 use ::std::path::Path;
 
+use ::vasp_poscar::Poscar;
 use ::vasp_poscar::failure::Error as FailError;
 use ::vasp_poscar::failure::ResultExt as FailResultExt;
 
@@ -148,7 +149,7 @@ impl Test {
         let Test { ref input, ref kind, .. } = *self;
         match *kind {
             TestKind::Success(ref expected) => {
-                match ::vasp_poscar::from_reader(input.as_bytes()) {
+                match Poscar::from_reader(input.as_bytes()) {
                     Err(e) => { return Err(Error::Error(e)); },
                     Ok(poscar) => {
                         // We serialize back into text before comparing against the expected.
@@ -159,10 +160,7 @@ impl Test {
                         //
                         // I suspect that an automatic outfile-generating script and careful
                         // review of git diffs should be good enough to work around that disadvantage.
-                        let mut bonafide = vec![];
-                        ::vasp_poscar::to_writer(&mut bonafide, &poscar).unwrap();
-                        let bonafide = String::from_utf8(bonafide).unwrap();
-
+                        let bonafide = format!("{}", poscar);
                         let expected = expected.clone();
                         if expected != bonafide {
                             return Err(Error::Mismatch { bonafide, expected });
@@ -171,7 +169,7 @@ impl Test {
                 }
             },
             TestKind::Failure(ref expected) => {
-                match ::vasp_poscar::from_reader(input.as_bytes()) {
+                match Poscar::from_reader(input.as_bytes()) {
                     Ok(_) => { return Err(Error::NoError); },
                     Err(e) => {
                         // do a substring search

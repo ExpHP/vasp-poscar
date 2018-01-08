@@ -307,22 +307,24 @@ macro_rules! arr_3 {
     ]}
 }
 
-/// Reads a POSCAR from an open file.
-///
-/// This form is unable to include a filename in error messages.
-// FIXME how do other libraries handle this?
-//       maybe the filename is simply not this crate's responsibility?
-pub fn from_reader<R>(f: R) -> Result<Poscar, ::failure::Error>
-where R: BufRead,
-{ _from_reader(f, None::<PathBuf>) }
+impl Poscar {
+    /// Reads a POSCAR from an open file.
+    ///
+    /// This form is unable to include a filename in error messages.
+    // FIXME how do other libraries handle this?
+    //       maybe the filename is simply not this crate's responsibility?
+    pub fn from_reader<R>(f: R) -> Result<Self, ::failure::Error>
+    where R: BufRead,
+    { _from_reader(f, None::<PathBuf>) }
 
-/// Reads a POSCAR from a filesystem path.
-pub fn from_path<P>(path: P) -> Result<Poscar, ::failure::Error>
-where P: AsRef<Path>,
-{
-    let f = ::std::fs::File::open(path.as_ref())?;
-    let f = ::std::io::BufReader::new(f);
-    _from_reader(f, Some(path))
+    /// Reads a POSCAR from a filesystem path.
+    pub fn from_path<P>(path: P) -> Result<Self, ::failure::Error>
+    where P: AsRef<Path>,
+    {
+        let f = ::std::fs::File::open(path.as_ref())?;
+        let f = ::std::io::BufReader::new(f);
+        _from_reader(f, Some(path))
+    }
 }
 
 fn parse_unsigned(s: &str) -> Result<u64, ParseUnsignedError>
