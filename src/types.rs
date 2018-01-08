@@ -7,13 +7,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[derive(Debug, Clone)]
-pub struct Poscar(pub(crate) RawPoscar);
-
 /// Represents a POSCAR file.
 ///
 /// Currently, the only API provided on this type is the `raw` method, which
 /// produces an object you can manipulate directly.
+#[derive(Debug, Clone)]
+pub struct Poscar(pub(crate) RawPoscar);
+
 impl Poscar {
     /// Convert into a form with public data members that you can freely match
     /// against and unpack.
