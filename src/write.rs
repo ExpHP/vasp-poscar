@@ -9,7 +9,6 @@
 
 use ::std::io;
 use ::std::fmt;
-use ::std::io::prelude::*;
 use ::{Poscar, RawPoscar, ScaleLine, Coords};
 
 /// Writes a POSCAR to an io::Write instance.
@@ -17,13 +16,17 @@ use ::{Poscar, RawPoscar, ScaleLine, Coords};
 /// **This method does not panic.**  All conditions required for the
 /// successful creation of an output file are already enforced as
 /// invariants of the Poscar datatype.
-pub fn to_writer<W>(
-    mut w: W,
-    poscar: &Poscar,
-) -> io::Result<()>
-where W: Write
+pub fn to_writer<W>(mut w: W, poscar: &Poscar) -> io::Result<()>
+where W: io::Write,
+{ write!(w, "{}", poscar) }
+
+impl fmt::Display for Poscar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+    { ::write::display(f, self) }
+}
+
+fn display(w: &mut fmt::Formatter, poscar: &Poscar) -> fmt::Result
 {
-    let w = &mut w;
     let &Poscar(RawPoscar {
         scale, ref lattice_vectors, ref velocities, ref dynamics,
         ref comment, ref positions, ref group_counts, ref group_symbols,
@@ -88,9 +91,9 @@ where W: Write
     Ok(())
 }
 
-fn write_sep<W, Xs>(mut w: W, sep: &str, xs: Xs) -> io::Result<()>
+fn write_sep<W, Xs>(mut w: W, sep: &str, xs: Xs) -> fmt::Result
 where
-    W: io::Write,
+    W: fmt::Write,
     Xs: IntoIterator,
     Xs::Item: fmt::Display,
 {

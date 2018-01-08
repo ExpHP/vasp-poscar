@@ -43,12 +43,12 @@
 //! poscar.comment = "[Subject Name Here] was here".into();
 //! poscar.scale = ScaleLine::Volume(10.0);
 //!
-//! // Turn back into a Poscar for writing
+//! // Turn back into a Poscar for writing.
+//! // Notice Poscar implements fmt::Display.
 //! let poscar = poscar.validate()?;
-//!
-//! let mut buffer = vec![];
-//! vasp_poscar::to_writer(&mut buffer, &poscar)?;
-//! assert_eq!(String::from_utf8(buffer)?, "\
+//! assert_eq!(
+//!     format!("{}", poscar),
+//!     "\
 //! [Subject Name Here] was here
 //!   -10.0
 //!     0.5 0.5 0.0

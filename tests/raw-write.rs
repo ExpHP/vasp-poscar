@@ -37,11 +37,8 @@ fn boring_poscar() -> RawPoscar {
 // Stringify a poscar and grab a few select lines into an array.
 macro_rules! poscar_lines {
     ($poscar:expr, [$($i:expr),+ $(,)*]) => {{
-        let mut bytes = vec![];
-        ::vasp_poscar::to_writer(&mut bytes, &$poscar).unwrap();
-
-        let s = String::from_utf8(bytes).unwrap();
-
+        let poscar: vasp_poscar::Poscar = $poscar;
+        let s = format!("{}", poscar);
         [
             // (this is only for use in assert_eq, where a default value
             //  for the string is a bit more helpful than an early panic)

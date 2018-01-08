@@ -45,11 +45,10 @@ assert_eq!(poscar.scale, ScaleLine::Factor(3.7));
 poscar.comment = "[Subject Name Here] was here".into();
 poscar.scale = ScaleLine::Volume(10.0);
 
-// Turn back into a Poscar for writing
+// Turn back into a Poscar for writing.
+// Notice Poscar implements Display.
 let poscar = poscar.validate()?;
-
-let mut buffer = vec![];
-vasp_poscar::to_writer(&mut buffer, &poscar)?;
+print!("{}, poscar);
 ```
 
 ## Notes about the format
@@ -76,7 +75,7 @@ The format also unfortunately suffers a great deal from being, well... *underspe
 
 VASP's own documentation can be found here: http://cms.mpi.univie.ac.at/vasp/guide/node59.html.  Please refer to that page for questions regarding the purpose and semantics of each element in the file.
 
-A somewhat fuller specification of the format's **syntax** (*as implemented by this crate*) can be found at [doc/format.md](doc/format.md). 
+A somewhat fuller specification of the format's **syntax** (*as implemented by this crate*) can be found at [doc/format.md](doc/format.md).
 
 ## Scope of this crate
 
