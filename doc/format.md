@@ -122,31 +122,3 @@ It is strongly recommended that you always **use** `T` and `F` as well, for grea
 These may optionally appear immediately after the last coordinate data line. The first line is a flag line just like the one for positions.  Each data line has three reals. *The rest is a freeform comment.*
 
 **Note:** When VASP itself writes a CONTCAR file, **it writes a blank line for the coordinate system line.**  Because it does not start with "c" or "k", this blank line in fact indicates that the velocities are in **direct coordinates**.  However, some libraries (such as pymatgen) actually expect this line to always be blank; therefore, *this crate also chooses to write a blank line when the velocities are in direct units.*
-
-
-<!--
-FIXME Despite my best efforts I cannot seem to actually get VASP to parse this.
-      It keeps triggering segmentation faults on unexpected EOF.
-      I've looked the VASP source up and down and simply cannot see how
-       this is happening.
-//! #### Predictor corrector (only if velocities are present)
-//!
-//! * Blank line
-//! * "Init" line
-//! * Timestep line
-//! * Nose parameter line
-//! * Data lines (3 * N of them)
-//!
-//! This entire section is optional.
-//!
-//! *The "blank line" may be a freeform comment.*
-//!
-//! The next three lines each have one primitive. *The rest of each line is a comment.*
-//!
-//! * The init line is an integer.  If it is 0, then the rest of the predictor corrector
-//!   is taken to be not present.  It appears that this value should always be 1.
-//! * The timestep line is a real.  It stores the value of `POTIM`.
-//! * The nose parameter line is a real.
-//!
-//! Each data line has 3 reals. Freeform comments are **not allowed** here.
--->
