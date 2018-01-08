@@ -133,7 +133,7 @@ fn atom_types() {
 }
 
 #[test]
-fn coords() {
+fn positions() {
     assert_eq!(
         poscar!(b"
             comment
@@ -146,7 +146,7 @@ fn coords() {
             0 0.25 0.5
             1 1.25 1.5
             2 2.25 2.5
-        ").unwrap().raw().coords,
+        ").unwrap().raw().positions,
         Coords::Cart(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],
@@ -166,7 +166,7 @@ fn coords() {
             0 0.25 0.5
             1 1.25 1.5
             2 2.25 2.5
-        ").unwrap().raw().coords,
+        ").unwrap().raw().positions,
         Coords::Frac(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],

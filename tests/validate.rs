@@ -28,7 +28,7 @@ fn boring_poscar() -> RawPoscar {
         ],
         group_symbols: None,
         group_counts: vec![1],
-        coords: Coords::Frac(vec![[0.0, 0.0, 0.0]]),
+        positions: Coords::Frac(vec![[0.0, 0.0, 0.0]]),
         dynamics: None,
         velocities: None,
     }
@@ -75,7 +75,7 @@ fn bad_scale() {
 #[test]
 fn no_atoms() {
     let mut poscar = boring_poscar();
-    poscar.coords = Coords::Frac(vec![]);
+    poscar.positions = Coords::Frac(vec![]);
 
     poscar.group_counts = vec![];
     assert_matches!(
@@ -94,7 +94,7 @@ fn no_atoms() {
 fn inconsistent_num_groups() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 3]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
 
     poscar.group_symbols = Some(vec!["C".into()]);
     assert_matches!(
@@ -113,7 +113,7 @@ fn inconsistent_num_groups() {
 fn inconsistent_num_atoms() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 2]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 2]);
     assert_matches!(
         Err(ValidationError::WrongLength(..)),
         poscar.validate(),
@@ -121,7 +121,7 @@ fn inconsistent_num_atoms() {
 
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 3]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
     assert_matches!(
         Ok(_),
         poscar.clone().validate(),

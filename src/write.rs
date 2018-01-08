@@ -26,7 +26,7 @@ where W: Write
     let w = &mut w;
     let &Poscar(RawPoscar {
         scale, ref lattice_vectors, ref velocities, ref dynamics,
-        ref comment, ref coords, ref group_counts, ref group_symbols,
+        ref comment, ref positions, ref group_counts, ref group_symbols,
     }) = poscar;
 
     assert!(!comment.contains("\n"), "BUG");
@@ -57,14 +57,14 @@ where W: Write
         writeln!(w, "Selective Dynamics")?;
     }
 
-    match coords {
+    match positions {
         &Coords::Cart(_) => writeln!(w, "Cartesian")?,
         &Coords::Frac(_) => writeln!(w, "Direct")?,
     }
 
-    let coords = coords.as_ref().raw();
-    for (i, c) in coords.iter().enumerate() {
-        write!(w, "  {}", By3(*c, Dtoa))?;
+    let positions = positions.as_ref().raw();
+    for (i, pos) in positions.iter().enumerate() {
+        write!(w, "  {}", By3(*pos, Dtoa))?;
         if let &Some(ref dynamics) = dynamics {
             let fmt = |b| match b { true => 'T', false => 'F' };
             write!(w, " {}", By3(dynamics[i], fmt))?;

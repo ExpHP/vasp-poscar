@@ -28,7 +28,7 @@ fn boring_poscar() -> RawPoscar {
         ],
         group_symbols: None,
         group_counts: vec![1],
-        coords: Coords::Frac(vec![[0.0, 0.0, 0.0]]),
+        positions: Coords::Frac(vec![[0.0, 0.0, 0.0]]),
         dynamics: None,
         velocities: None,
     }
@@ -102,7 +102,7 @@ fn lattice() {
 fn atom_types() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 3]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [5]),
         [
@@ -113,7 +113,7 @@ fn atom_types() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
     poscar.group_symbols = Some(vec!["C".into(), "N".into()]);
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 3]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
     assert_eq!(
         poscar_lines!(poscar.validate().unwrap(), [5, 6]),
         [
@@ -125,10 +125,10 @@ fn atom_types() {
 
 
 #[test]
-fn coords() {
+fn positions() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![
+    poscar.positions = Coords::Frac(vec![
         [0.0, 0.25, 0.5],
         [1.0, 1.25, 1.5],
         [2.0, 2.25, 2.5],
@@ -145,7 +145,7 @@ fn coords() {
 
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Cart(vec![
+    poscar.positions = Coords::Cart(vec![
         [0.0, 0.25, 0.5],
         [1.0, 1.25, 1.5],
         [2.0, 2.25, 2.5],
@@ -165,7 +165,7 @@ fn coords() {
 fn dynamics() {
     let mut poscar = boring_poscar();
     poscar.group_counts = vec![2, 1];
-    poscar.coords = Coords::Frac(vec![[0.0; 3]; 3]);
+    poscar.positions = Coords::Frac(vec![[0.0; 3]; 3]);
     poscar.dynamics = Some(vec![
         [ true, false,  true],
         [false, false,  true],

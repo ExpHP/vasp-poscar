@@ -48,7 +48,7 @@ pub struct RawPoscar {
     pub lattice_vectors: [[f64; 3]; 3],
     pub group_symbols: Option<Vec<String>>,
     pub group_counts: Vec<usize>,
-    pub coords: Coords,
+    pub positions: Coords,
     pub velocities: Option<Coords>,
     pub dynamics: Option<Vec<[bool; 3]>>,
     // pub predictor_corrector: Option<PredictorCorrector>,
@@ -123,8 +123,8 @@ impl RawPoscar {
 
         // FIXME need to forbid spaces in symbols
 
-        if self.coords.as_ref().raw().len() != n {
-            g_bail!(ValidationError::WrongLength("coords", n));
+        if self.positions.as_ref().raw().len() != n {
+            g_bail!(ValidationError::WrongLength("positions", n));
         }
 
         if let Some(ref velocities) = self.velocities {

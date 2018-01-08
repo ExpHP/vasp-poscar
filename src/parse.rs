@@ -449,8 +449,8 @@ where R: BufRead, P: AsRef<Path>,
         // rest is freeform comment
     };
 
-    let (coords, dynamics) = {
-        let mut coords = vec![];
+    let (positions, dynamics) = {
+        let mut positions = vec![];
         let mut dynamics = match has_selective_dynamics {
             true => Some(vec![]),
             false => None,
@@ -460,7 +460,7 @@ where R: BufRead, P: AsRef<Path>,
             let line = lines.next()?;
             let mut words = line.words();
 
-            coords.push(arr_3![_ => words.next_or_err("expected 3 coordinates")?.parse()?]);
+            positions.push(arr_3![_ => words.next_or_err("expected 3 coordinates")?.parse()?]);
 
             if let Some(selective_dynamics) = dynamics.as_mut() {
                 selective_dynamics.push({
@@ -472,12 +472,12 @@ where R: BufRead, P: AsRef<Path>,
             // rest is freeform comment
         };
 
-        (coords, dynamics)
+        (positions, dynamics)
     };
 
-    let coords = match has_direct {
-        true  => Coords::Frac(coords),
-        false => Coords::Cart(coords),
+    let positions = match has_direct {
+        true  => Coords::Frac(positions),
+        false => Coords::Cart(positions),
     };
 
     let velocities = None; // FIXME
@@ -488,8 +488,7 @@ where R: BufRead, P: AsRef<Path>,
     }
 
     Ok(RawPoscar {
-        comment, scale, coords, lattice_vectors,
-        group_symbols, group_counts,
-        velocities, dynamics,
+        comment, scale, positions, lattice_vectors,
+        group_symbols, group_counts, velocities, dynamics,
     }.validate().expect("an invariant was not checked during parsing (this is a bug!)"))
 }
