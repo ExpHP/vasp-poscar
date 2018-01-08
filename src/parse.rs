@@ -18,6 +18,30 @@ use ::std::path::{Path, PathBuf};
 
 pub(crate) use self::error::ParseError;
 
+impl Poscar {
+    /// Reads a POSCAR from an open file or a `&[u8]` buffer.
+    ///
+    /// **A successful read will always read the entire object to EOF.**
+    /// This is simply the nature of the file format.  If you need to extract
+    /// a POSCAR embedded within a larger resource, you will likely need to
+    /// use an adapter like [`Read::take`].
+    ///
+    /// [`Read::take`]: https://doc.rust-lang.org/std/io/trait.Read.html#method.take
+    // NOTE: This form is unable to include a filename in error messages.
+    // FIXME how do other libraries handle this?
+    //       maybe the filename is simply not this crate's responsibility?
+    pub fn from_reader<R: BufRead>(f: R) -> Result<Self, ::failure::Error>
+    { _from_reader(f, None::<PathBuf>) }
+
+    /// Reads a POSCAR from the filesystem.
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ::failure::Error>
+    {
+        let f = ::std::fs::File::open(path.as_ref())?;
+        let f = ::std::io::BufReader::new(f);
+        _from_reader(f, Some(path))
+    }
+}
+
 mod error {
     use super::*;
     use ::std::fmt;
@@ -341,24 +365,6 @@ macro_rules! arr_3 {
         { let $pat = 1; $expr },
         { let $pat = 2; $expr },
     ]}
-}
-
-impl Poscar {
-    /// Reads a POSCAR from an open file or a `&[u8]` buffer.
-    //
-    // This form is unable to include a filename in error messages.
-    // FIXME how do other libraries handle this?
-    //       maybe the filename is simply not this crate's responsibility?
-    pub fn from_reader<R: BufRead>(f: R) -> Result<Self, ::failure::Error>
-    { _from_reader(f, None::<PathBuf>) }
-
-    /// Reads a POSCAR from the filesystem.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ::failure::Error>
-    {
-        let f = ::std::fs::File::open(path.as_ref())?;
-        let f = ::std::io::BufReader::new(f);
-        _from_reader(f, Some(path))
-    }
 }
 
 fn parse_unsigned(s: &str) -> Result<u64, ParseUnsignedError>
