@@ -7,7 +7,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Library for reading and writing VASP POSCAR files.
+//! Library for reading and writing [VASP POSCAR] files.
+//!
+//! See the [`Poscar`] type for more details.
 //!
 //! ```rust
 //! # #[derive(Debug)] enum Never {}
@@ -43,9 +45,10 @@
 //! poscar.comment = "[Subject Name Here] was here".into();
 //! poscar.scale = ScaleLine::Volume(10.0);
 //!
-//! // Turn back into a Poscar for writing.
-//! // Notice Poscar implements fmt::Display.
+//! // Turn the RawPoscar back into a Poscar
 //! let poscar = poscar.validate()?;
+//!
+//! // Poscar implements Display
 //! assert_eq!(
 //!     format!("{}", poscar),
 //!     "\
@@ -64,6 +67,9 @@
 //! # fn main() { _main().unwrap() }
 //! #
 //! ```
+//!
+//! [VASP POSCAR]: http://cms.mpi.univie.ac.at/vasp/guide/node59.html
+//! [`Poscar`]: struct.Poscar.html
 
 #[macro_use]
 pub extern crate failure;
@@ -78,6 +84,4 @@ mod types;
 mod write;
 
 pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
-
 pub use types::ValidationError;
-pub use parse::ParseError;

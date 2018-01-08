@@ -9,8 +9,16 @@
 
 /// Represents a POSCAR file.
 ///
-/// Currently, the only API provided on this type is the `raw` method, which
-/// produces an object you can manipulate directly.
+/// The key parts of the API are currently:
+///
+/// * **Reading files** through [`Poscar::from_reader`].
+/// * **Manipulation/inspection** of the data via [`raw`] and [`RawPoscar`].
+///   *(this will be supplanted with cleaner solutions over time)*
+/// * **Writing files** through `std::fmt::Display`. (e.g. `print!` and `write!`)
+///
+/// [`Poscar::from_reader`]: #method.from_reader
+/// [`RawPoscar`]: struct.RawPoscar.html
+/// [`raw`]: #method.raw
 #[derive(Debug, Clone)]
 pub struct Poscar(pub(crate) RawPoscar);
 
@@ -18,29 +26,95 @@ impl Poscar {
     /// Convert into a form with public data members that you can freely match
     /// against and unpack.
     ///
-    /// When you are done modifying the object, you may call `.validate()`
-    /// to turn it back into a Poscar. (or you can just keep all the data to yourself.
-    /// We don't mind!)
+    /// When you are done modifying the object, you may call [`validate`]
+    /// to turn it back into a `Poscar`.
+    /// (or you can just keep all the data to yourself. We don't mind!)
     ///
     /// Currently, this is the most versatile way of manipulating a Poscar object,
     /// though it may not be the most stable or convenient. **Be prepared for breaking
     /// changes to affect code using this method.** In the future, stabler alternatives
     /// for common operations may be provided on `Poscar` itself.
+    ///
+    /// [`validate`]: struct.RawPoscar.html#method.validate
     pub fn raw(self) -> RawPoscar { self.0 }
 }
 
-/// Basic representation of a POSCAR with public data members.
+/// Unencumbered `struct` form of a Poscar with public data members.
 ///
-/// All members are public to allow you to construct it.
-/// The mapping between its fields and those of the the POSCAR file
-/// should be *dead obvious.*  Note in particular that the scale
-/// line is preserved rather than incorporated into the structure.
+/// This is basically the [`Poscar`] type, minus all the type-protected
+/// invariants which ensure that it can be printed.
 ///
-/// This type brings simplicity at the cost of stability.
-/// **Be prepared for breakage** as more fields are added;
+/// # General notes
+///
+/// **Working with this type requires you to be familiar with the POSCAR
+/// format.** Its fields map one-to-one with the sections of a POSCAR file.
+/// Please see the [VASP documentation] for help regarding its semantics.
+///
+/// **Important:** not mentioned on that page is the **symbols line**, which
+/// may appear right after the lattice vectors, before the counts. The number
+/// of symbols must match the number of counts.
+/// Example with a symbols line:
+///
+/// <!-- FIXME this example sucks because the number of atoms also matches
+///            the number of groups -->
+///
+/// ```text
+/// Cubic BN
+///    3.57
+///  0.0 0.5 0.5
+///  0.5 0.0 0.5
+///  0.5 0.5 0.0
+///    B N
+///    1 1
+/// Direct
+///  0.00 0.00 0.00
+///  0.25 0.25 0.25
+/// ```
+///
+/// # Buyer beware
+///
+/// All fields are public, allow you to **construct it using basic
+/// struct syntax:**
+///
+/// ```rust
+/// use vasp_poscar::{RawPoscar, ScaleLine, Coords};
+///
+/// # #[allow(unused)]
+/// let poscar = RawPoscar {
+///     comment: "Cubic BN".into(),
+///     scale: ScaleLine::Factor(3.57),
+///     lattice_vectors: [
+///         [0.0, 0.5, 0.5],
+///         [0.5, 0.0, 0.5],
+///         [0.5, 0.5, 0.0],
+///     ],
+///     group_symbols: Some(vec!["B".into(), "N".into()]),
+///     group_counts: vec![1, 1],
+///     positions: Coords::Frac(vec![
+///         [0.00, 0.00, 0.00],
+///         [0.25, 0.25, 0.25],
+///     ]),
+///     velocities: None,
+///     dynamics: None,
+/// };
+/// ```
+///
+/// This is, of course, is a double-edged sword.
+/// For better or worse,
+/// this type brings **simplicity at the cost of stability.**
+/// Be prepared for breakage as more fields are added;
 /// for now, you are advised to limit your usage of this type to
-/// self-contained functions. (e.g. conversions to and from a
-/// datatype of your own)
+/// a small number of self-contained functions. (e.g. conversions
+/// to and from a datatype of your own)
+///
+/// # Display
+///
+/// `RawPoscar` itself **cannot be printed.** To write out your modified
+/// file, use the [`validate`] method to obtain a [`Poscar`] first.
+///
+/// [VASP documentation]: https://cms.mpi.univie.ac.at/vasp/vasp/POSCAR_file.html
+/// [`validate`]: #method.validate
+/// [`Poscar`]: struct.Poscar.html
 #[derive(Debug, Clone)]
 pub struct RawPoscar {
     pub comment: String,
@@ -54,42 +128,55 @@ pub struct RawPoscar {
     // pub predictor_corrector: Option<PredictorCorrector>,
 }
 
-/// Covers all the reasons why `RawPoscar::validate` might get mad at you.
+/// Covers all the reasons why [`RawPoscar::validate`] might get mad at you.
+///
+/// Beyond checking obvious problems like mismatched lengths, these
+/// limitations also exist to ensure that a [`Poscar`] can be roundtripped
+/// through its file representation.
 ///
 /// The variants are public so that by looking at the docs you can see all the possible errors.
 /// That said, you have no good reason to write code that matches on this.
 ///
 /// ...right?
+///
+/// [`Poscar`]: struct.Poscar.html
+/// [`RawPoscar::validate`]: struct.RawPoscar.html#method.validate
 #[derive(Debug, Fail)]
 pub enum ValidationError {
     /// The comment line is more than one line.
     #[fail(display = "the comment may not contain a newline")]
     NewlineInComment,
+
     /// A requirement on `group_symbols` was violated.
     ///
     /// There are a few more restrictions in addition to the no-leading-digit
     /// restriction mentioned in format.md, in order to ensure roundtripping:
+    ///
     /// * A symbol may not be the empty string
     /// * A symbol may not contain whitespace
     // (NOTE: `None` when the specific problematic symbol could not be identified.)
     #[fail(display = "invalid symbol in group_symbols: {:?}", _0)]
     InvalidSymbol(Option<String>),
+
     /// Poscar is required to have at least one atom.
-    /// (this is to enable possible support for pymatgen-style labels in the future)
     #[fail(display = "at least one atom is required")]
     NoAtoms,
+
     /// The inner value in the scale line must be positive.
     #[fail(display = "the value inside Factor(x) or Volume(x) must be positive")]
     BadScaleLine,
+
     /// Mismatch between `group_counts` and `group_symbols` lengths.
     #[fail(display = "inconsistent number of atom types")]
     InconsistentNumGroups,
+
     /// Length of a member is incorrect.
     #[fail(display = "member '{}' is wrong length (should be {})", _0, _1)]
     WrongLength(&'static str, usize),
 
     /// INIT in predictor corrector is zero. (you should use `None` instead)
     #[allow(unused)] // FIXME
+    #[doc(hidden)]
     #[fail(display = "predictor corrector has an init value of 0")]
     PredictorCorrectorInitIsZero,
 
@@ -105,10 +192,12 @@ fn _check_conv() {
 }
 
 impl RawPoscar {
-    /// Convert into a `Poscar` object after checking its invariants.
+    /// Convert into a [`Poscar`] object after checking its invariants.
     ///
-    /// To see what those invariants are, check the docs for ValidationError.
-    // TODO: Link
+    /// To see what those invariants are, check the docs for [`ValidationError`].
+    ///
+    /// [`Poscar`]: struct.Poscar.html
+    /// [`ValidationError`]: enum.ValidationError.html
     pub fn validate(self) -> Result<Poscar, ValidationError> {
         if let Some(ref group_symbols) = self.group_symbols {
             if self.group_counts.len() != group_symbols.len() {

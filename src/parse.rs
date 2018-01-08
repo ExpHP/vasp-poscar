@@ -16,13 +16,15 @@ use ::std::str::FromStr;
 use ::std::cmp::Ordering;
 use ::std::path::{Path, PathBuf};
 
-pub use self::error::ParseError;
+pub(crate) use self::error::ParseError;
+
 mod error {
     use super::*;
     use ::std::fmt;
 
+    /// A (non-IO-related) error that occurred while parsing a POSCAR.
     #[derive(Debug, Fail)]
-    pub struct ParseError {
+    pub(crate) struct ParseError {
         pub(crate) kind: Kind,
         pub(crate) path: Option<PathBuf>,
         // (NOTE: these are zero-based for maximum comfort, but the Display
@@ -267,7 +269,7 @@ pub(crate) struct Logical(pub bool);
 
 #[derive(Debug, Fail)]
 #[fail(display = "invalid Fortran logical value: {:?}", _0)]
-pub struct ParseLogicalError(String);
+pub(crate) struct ParseLogicalError(String);
 
 impl FromStr for Logical {
     type Err = ParseLogicalError;
@@ -342,18 +344,16 @@ macro_rules! arr_3 {
 }
 
 impl Poscar {
-    /// Reads a POSCAR from an open file.
-    ///
-    /// This form is unable to include a filename in error messages.
+    /// Reads a POSCAR from an open file or a `&[u8]` buffer.
+    //
+    // This form is unable to include a filename in error messages.
     // FIXME how do other libraries handle this?
     //       maybe the filename is simply not this crate's responsibility?
-    pub fn from_reader<R>(f: R) -> Result<Self, ::failure::Error>
-    where R: BufRead,
+    pub fn from_reader<R: BufRead>(f: R) -> Result<Self, ::failure::Error>
     { _from_reader(f, None::<PathBuf>) }
 
-    /// Reads a POSCAR from a filesystem path.
-    pub fn from_path<P>(path: P) -> Result<Self, ::failure::Error>
-    where P: AsRef<Path>,
+    /// Reads a POSCAR from the filesystem.
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ::failure::Error>
     {
         let f = ::std::fs::File::open(path.as_ref())?;
         let f = ::std::io::BufReader::new(f);
