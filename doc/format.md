@@ -120,3 +120,9 @@ It is strongly recommended that you always **use** `T` and `F` as well, for grea
 These may optionally appear immediately after the last coordinate data line. The first line is a flag line just like the one for positions.  Each data line has three reals. *The rest is a freeform comment.*
 
 **Note:** When VASP itself writes a CONTCAR file, **it writes a blank line for the coordinate system line.**  Because it does not start with "c" or "k", this blank line in fact indicates that the velocities are in **direct coordinates**.  However, some libraries (such as pymatgen) actually expect this line to always be blank; therefore, *this crate also chooses to write a blank line when the velocities are in direct units.*
+
+### Trailing blank lines
+
+Trailing lines at the end of the file are allowed as long as they contain nothing but whitespace.
+
+The astute may notice that, together with the very real fact that the control line for velocities may be a blank line, it would be impossible to tell whether or not velocities are "present" for a structure with zero atoms.  Fortunately, such a structure is already forbidden.

@@ -26,3 +26,6 @@ name = "raw-write"
 
 [[test]]
 name = "validate"
+
+[[test]]
+name = "parse-trailing-lines"
