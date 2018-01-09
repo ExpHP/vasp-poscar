@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ExpHP/vasp-poscar.svg?branch=master)](https://travis-ci.org/ExpHP/vasp-poscar)
+
 # POSCAR format for Rust
 
 <!-- TODO badges, link to documentation -->
@@ -10,6 +12,8 @@ vasp-poscar = "0.1.0"
 A parser and printer for the POSCAR file format for representing crystallographic compounds.
 
 POSCAR is primarily an input file format used by the [Vienna Ab initio Simulation Package (VASP)](https://www.vasp.at/), which has become fairly well-supported by a wide variety of software related to crystallography and molecular dynamics.
+
+## Example
 
 **An example file:**
 
@@ -26,7 +30,7 @@ Direct
   0.25 0.25 0.25
 ```
 
-## Example
+**Example code:**
 
 ```rust
 extern crate vasp_poscar;
@@ -82,7 +86,7 @@ A somewhat fuller specification of the format's **syntax** (*as implemented by t
 `vasp-poscar` is primarily a backend-level crate for *reading and writing a file format.*  It aims to provide:
 
 * **reasonable diagnostics** on malformed files, with special consideration given to errors that are easy to make
-* **round-trippable precision**; when a POSCAR is read in, it does not automatically absorb the scale into the lattice matrix, or convert everything into its favorite representation (direct vs cartesian). *Those are __your__ decisions to make!* In the meanwhile, the in-memory representation of the poscar leaves everything exactly as is (modulo nits like case and whitespace), so that nary even a negative zero is lost when it is written back to a file.
+* **round-trippable precision**; when a POSCAR is read in, it does not automatically absorb the scale into the lattice matrix, or convert everything into its favorite representation (direct vs cartesian). *Those are __your__ decisions to make!*
 
 `vasp-poscar` is secondarily a crate for *managing the redundant forms of data that exist within the file.*  While not currently implemented, it is eventually planned for this crate to provide basic facilities for:
 
@@ -90,9 +94,9 @@ A somewhat fuller specification of the format's **syntax** (*as implemented by t
 * Converting between direct and cartesian representations
 * Manipulating the scale and lattice with respect to each other (e.g. switching between scale and volume, or absorbing the scale into the lattice)
 
-`vasp-poscar` is **not really a crate for doing science.**  It will *never* provide things like symmetry analysis, primitive structure search, supercell construction, perturbation of positions, or cutting across a plane, etc. It won't tell you what the masses of your ions are, and it *most certainly won't __ever__ attempt to automatically search for a file called `POTCAR` in the same directory to figure out things like atomic numbers.* (you know who you are...).
+`vasp-poscar` is **not really a crate for doing science.**  It will *never* provide things like symmetry analysis, primitive structure search, supercell construction, perturbation of positions, or cutting across a plane, etc.  These things are simply not its job.
 
-These things are simply not its job.  The expectation is that the data read by `vasp-poscar` may be used to construct an instance of a more versatile---and more opinionated---`Structure` type **implemented in another crate.**  (of course, if you are designing such a type, you are invited to depend on this crate as a parsing backend!)
+The expectation is that the data read by `vasp-poscar` may be used to construct an instance of a more versatile—and more opinionated—`Structure` type **implemented in another crate.**  (of course, if you are designing such a type, you are invited to depend on this crate as a parsing backend!)
 
 ## License
 
