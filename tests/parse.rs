@@ -11,7 +11,6 @@ extern crate vasp_poscar;
 #[macro_use]
 extern crate serde;
 extern crate serde_yaml;
-extern crate left_pad;
 
 use ::std::fs;
 use ::std::path::Path;
@@ -30,7 +29,7 @@ fn main() {
     let mut failures = vec![];
     for test in tests {
 
-        print!("  {}.yaml: ", ::left_pad::leftpad(&test.basename[..], name_pad));
+        print!("  {:>width$}.yaml: ", &test.basename[..], width=name_pad);
         for (i, case) in test.cases.iter().enumerate() {
             match case.run() {
                 Ok(()) => print!("."),
