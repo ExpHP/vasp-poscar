@@ -1,5 +1,5 @@
 [![Crates.io](https://img.shields.io/crates/v/vasp-poscar.svg)](https://crates.io/crates/vasp-poscar)
-[![Docs.rs](https://docs.rs/vasp-poscar/badge.svg)](https://docs.rs/vasp-poscar/0.1.0/vasp_poscar/)
+[![Docs.rs](https://docs.rs/vasp-poscar/badge.svg)](https://docs.rs/vasp-poscar/*/vasp_poscar/)
 [![Build Status](https://travis-ci.org/ExpHP/vasp-poscar.svg?branch=master)](https://travis-ci.org/ExpHP/vasp-poscar)
 
 # POSCAR format for Rust
@@ -8,7 +8,7 @@
 
 ```toml
 [dependencies]
-vasp-poscar = "0.1.0"
+vasp-poscar = "0.1.1"
 ```
 
 A parser and printer for the POSCAR file format for representing crystallographic compounds.
