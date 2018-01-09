@@ -7,6 +7,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![doc(html_root_url = "https://docs.rs/vasp-poscar/0.1.0")]
+
 //! Library for reading and writing [VASP POSCAR] files.
 //!
 //! See the [`Poscar`] type for more details.
