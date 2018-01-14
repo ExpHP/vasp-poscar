@@ -358,15 +358,6 @@ pub(crate) fn is_valid_symbol_for_symbol_line(s: &str) -> bool {
     }
 }
 
-macro_rules! arr_3 {
-    ($pat:pat => $expr:expr)
-    => { [
-        { let $pat = 0; $expr },
-        { let $pat = 1; $expr },
-        { let $pat = 2; $expr },
-    ]}
-}
-
 fn parse_unsigned(s: &str) -> Result<u64, ParseUnsignedError>
 { let Unsigned(x) = s.parse()?; Ok(x) }
 

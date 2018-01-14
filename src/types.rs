@@ -7,6 +7,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use ::math::{inv_f64, det_f64};
+use ::std::borrow::{Cow};
+
 /// Represents a POSCAR file.
 ///
 /// The key parts of the API are currently:
@@ -37,6 +40,174 @@ impl Poscar {
     ///
     /// [`validate`]: struct.RawPoscar.html#method.validate
     pub fn raw(self) -> RawPoscar { self.0 }
+}
+
+/// # Accessing simple properties
+impl Poscar {
+    pub fn comment(&self) -> &str
+    { &self.0.comment }
+
+    /// Get the symbols for each atom type, if provided.
+    ///
+    /// The returned object is an `Iterator` of `&str`.
+    pub fn group_symbols(&self) -> Option<GroupSymbols>
+    {
+        self.0.group_symbols.as_ref()
+            .map(|syms| Box::new(syms.iter().map(|sym| &sym[..])) as Box<_>)
+    }
+
+    /// Get the counts of each atom type.
+    ///
+    /// The returned object is an `Iterator` of `usize`.
+    pub fn group_counts(&self) -> GroupCounts
+    { Box::new(self.0.group_counts.iter().map(|&c| c)) }
+}
+
+#[test]
+fn test_group_iters() {
+    let poscar = RawPoscar {
+        comment: "".into(),
+        dynamics: None,
+        group_counts: vec![2, 5, 1],
+        group_symbols: Some(vec!["C".into(), "B".into(), "C".into()]),
+        scale: ScaleLine::Factor(1.0),
+        lattice_vectors: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+        positions: Coords::Cart(vec![[0.0; 3]; 8]),
+        velocities: None,
+    }.validate().unwrap();
+
+    // verify that .rev() and .len() are usable
+    assert_eq!(poscar.group_counts().len(), 3);
+    assert_eq!(
+        poscar.group_counts().rev().collect::<Vec<_>>(),
+        vec![1, 5, 2],
+    );
+    assert_eq!(
+        poscar.group_symbols().map(|v| v.collect::<Vec<_>>()),
+        Some(vec!["C", "B", "C"]),
+    );
+
+    let mut poscar = poscar.raw();
+    poscar.group_symbols = None;
+    let poscar = poscar.validate().unwrap();
+
+    assert!(poscar.group_symbols().is_none());
+}
+
+/// Combines useful standard library iterator traits into one.
+///
+/// This exists because a trait object may only involve one non-OIBIT trait.
+pub trait VeclikeIterator: ExactSizeIterator + DoubleEndedIterator { }
+impl<Xs: ExactSizeIterator + DoubleEndedIterator> VeclikeIterator for Xs { }
+
+/// Returned by [`Poscar::group_symbols`].
+///
+/// [`Poscar::group_symbols`]: struct.Poscar.html#method.group_symbols
+pub type GroupSymbols<'a> = Box<VeclikeIterator<Item=&'a str> + 'a>;
+
+/// Returned by [`Poscar::group_counts`].
+///
+/// [`Poscar::group_counts`]: struct.Poscar.html#method.group_counts
+pub type GroupCounts<'a> = Box<VeclikeIterator<Item=usize> + 'a>;
+
+/// # Accessing computed properties
+impl Poscar {
+    /// Volume of a unit cell, taking the scale line into account.
+    ///
+    /// This quantity is non-negative.
+    pub fn scaled_volume(&self) -> f64
+    { match self.0.scale {
+        ScaleLine::Volume(v) => v,
+        ScaleLine::Factor(f) => self.unscaled_determinant().abs() * (f * f * f),
+    }}
+
+    fn unscaled_determinant(&self) -> f64
+    { det_f64(&self.0.lattice_vectors) }
+
+    // The quantity that each cartesian component needs to be multiplied
+    // by to properly account for the scale line.
+    //
+    // This quantity is non-negative, but may be infinite.
+    fn effective_scale_factor(&self) -> f64
+    { match self.0.scale {
+        ScaleLine::Factor(f) => f,
+        ScaleLine::Volume(v) => (v / self.unscaled_determinant().abs()).cbrt(),
+    }}
+}
+
+/// # Accessing the lattice vectors
+impl Poscar {
+    /// Compute the true lattice vectors, taking the scale line into account.
+    pub fn scaled_lattice_vectors(&self) -> [[f64; 3]; 3]
+    { self.scaled_lattice() }
+
+    /// Get the lattice vectors as they are written.
+    pub fn unscaled_lattice_vectors(&self) -> [[f64; 3]; 3]
+    { self.0.lattice_vectors }
+}
+
+/// # Accessing positions
+impl Poscar {
+    /// Compute the Cartesian positions, taking into account the scale factor.
+    pub fn scaled_cart_positions(&self) -> Cow<[[f64; 3]]>
+    {
+        // TODO maybe later: a reference can be returned when
+        //   carts are stored and the scale line is Factor(1.0)
+        match self.0.positions.as_ref() {
+            Coords::Cart(pos) => {
+                let scale = self.effective_scale_factor();
+                ::math::scale_n3(pos, scale).0.into()
+            },
+            Coords::Frac(x) => ::math::mul_n3_33(x, &self.scaled_lattice()).into(),
+        }
+    }
+
+    /// Get the Cartesian positions, as they would be written in the file.
+    pub fn unscaled_cart_positions(&self) -> Cow<[[f64; 3]]>
+    { self.0.positions.to_tag(&self.unscaled_lattice(), CART) }
+
+    /// Get the fractional positions, as they would be written in the file.
+    pub fn frac_positions(&self) -> Cow<[[f64; 3]]>
+    { self.0.positions.to_tag(&self.unscaled_lattice(), FRAC) }
+}
+
+/// # Accessing velocities
+impl Poscar {
+    /// Get the fractional-space velocities.
+    pub fn frac_velocities(&self) -> Option<Cow<[[f64; 3]]>>
+    { self.0.velocities.as_ref().map(|c| {
+        c.to_tag(&self.unscaled_lattice(), FRAC)
+    })}
+
+    /// Get the cartesian velocities.
+    ///
+    /// Notice that the scale factor does not affect velocities.
+    pub fn cart_velocities(&self) -> Option<Cow<[[f64; 3]]>>
+    { self.0.velocities.as_ref().map(|c| {
+        c.to_tag(&self.unscaled_lattice(), CART)
+    })}
+}
+
+// Accessing the lattice matrix.
+//
+// NOTE: These are not exposed because the crate deliberately tries to
+//       avoid mentioning matrices, because then it would have to clarify
+//       a bunch of irrelevant garbage about formalism when users really
+//       only need to know the data layout (which is AoS).
+//
+// For the record:
+//
+// * our formalism is row-based (nearly all vectors are formally row vectors)
+// * our storage is row-major (`matrix[i]` conceptually yields a row vector)
+impl Poscar {
+    fn unscaled_lattice(&self) -> [[f64; 3]; 3]
+    { self.0.lattice_vectors }
+
+    fn scaled_lattice(&self) -> [[f64; 3]; 3]
+    {
+        let f = self.effective_scale_factor();
+        ::math::scale_33(&self.0.lattice_vectors, f).0
+    }
 }
 
 /// Unencumbered `struct` form of a Poscar with public data members.
@@ -128,6 +299,9 @@ pub struct RawPoscar {
     // pub predictor_corrector: Option<PredictorCorrector>,
 }
 
+// --------------------------------
+// validation
+
 /// Covers all the reasons why [`RawPoscar::validate`] might get mad at you.
 ///
 /// Beyond checking obvious problems like mismatched lengths, these
@@ -185,6 +359,7 @@ pub enum ValidationError {
     AndManyMooooooooore,
 }
 
+// Compile-time test for a From impl.
 fn _check_conv() {
     fn panic<T>() -> T { panic!() }
     let e: ValidationError = panic();
@@ -269,6 +444,9 @@ impl RawPoscar {
     }
 }
 
+// --------------------------------
+// More public API data types
+
 /// Represents the second line in a POSCAR file.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScaleLine {
@@ -277,11 +455,43 @@ pub enum ScaleLine {
 }
 
 /// Represents data that can either be in direct units or cartesian.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Coords<T=Vec<[f64; 3]>> {
     Cart(T),
     Frac(T),
 }
+
+// --------------------------------
+// Meat of the coordinate conversion logic
+
+type CoordsTag = Coords<()>;
+const CART: CoordsTag = Coords::Cart(());
+const FRAC: CoordsTag = Coords::Frac(());
+
+impl Coords {
+    /// Convert into a specific Coord representations on demand.
+    ///
+    /// May return a borrow if that data is immediately available.
+    ///
+    /// This may compute a lattice inverse; don't use it in a tight loop.
+    #[inline(always)]
+    fn to_tag(&self, lattice: &[[f64; 3]; 3], tag: Coords<()>) -> Cow<[[f64; 3]]>
+    {
+        use self::Coords::{Cart, Frac};
+        match (self.as_ref(), tag) {
+            // borrow if possible
+            (Cart(v), CART) |
+            (Frac(v), FRAC) => (&v[..]).into(),
+
+            // compute
+            (Frac(v), CART) => ::math::mul_n3_33(v, lattice).into(),
+            (Cart(v), FRAC) => ::math::mul_n3_33(v, &inv_f64(lattice)).into(),
+        }
+    }
+}
+
+// --------------------------------
+// Helpers
 
 impl<A> Coords<A> {
     #[allow(unused)]
@@ -312,4 +522,139 @@ impl<A> Coords<A> {
         Coords::Cart(x) => x,
         Coords::Frac(x) => x,
     }}
+}
+
+// --------------------------------
+
+#[cfg(test)]
+#[deny(unused)]
+mod accessor_tests {
+    use super::*;
+
+    // This test aims to maximize bang-for-the-buck by trying
+    // to break as many broken implementations as possible.
+    #[test]
+    fn smoke_test() {
+        // * A lattice that:
+        //   - is asymmetric
+        //   - has a determinant != +/- 1
+        //   - has a negative determinant
+        // * A nontrivial scale factor
+        //   (i.e. scaled and unscaled values can differentiated)
+        // * Positions with:
+        //   - a point that isn't the origin
+        //   - a point that is outside the unit cell
+        // * All quantities have exact floating point representations.
+
+        // This is a unimodular matrix scaled by a factor of 2.
+        // It has determinant -8.
+        const UNSCALED_LATTICE: [[f64; 3]; 3] = [
+            [-4.0,  2.0, -4.0],
+            [ 2.0, -6.0,  6.0],
+            [-2.0, -2.0,  0.0],
+        ];
+        assert_eq!(::math::det_f64(&UNSCALED_LATTICE), -8.0);
+        // We will use the scale line to scale it by an additional factor of 2.
+        const SCALE: f64 = 2.0;
+        // These all have exact representations in f64.
+        const FRACS: &'static [[f64; 3]] = &[
+            [ 0.0 ,  0.25, 0.75 ],
+            [ 0.25, -2.25, 3.125],
+        ];
+
+        // this data is all derived from the above
+        const SCALED_VOLUME: f64 = 64.0;
+        const SCALED_LATTICE: [[f64; 3]; 3] = [
+            [-8.0,   4.0, -8.0],
+            [ 4.0, -12.0, 12.0],
+            [-4.0,  -4.0,  0.0],
+        ];
+        const UNSCALED_CARTS: &'static [[f64; 3]] = &[
+            [ -1.0 , -3.0 ,   1.5],
+            [-11.75,  7.75, -14.5],
+        ];
+        const SCALED_CARTS: &'static [[f64; 3]] = &[
+            [ -2.0,  -6.0,   3.0],
+            [-23.5,  15.5, -29.0],
+        ];
+
+        // Check all possible representations of this structure
+        // to ensure all code branches are tested.
+
+        // Ways to write the scale line
+        for &(dbg_scale, scale) in &[
+            ("factor", ScaleLine::Factor(SCALE)),
+            ("volume", ScaleLine::Volume(SCALED_VOLUME)),
+        ] {
+            // Ways to write the coordinate data
+            for &(dbg_coords, coord_data) in &[
+                ("frac", Coords::Frac(FRACS)),
+                ("cart", Coords::Cart(UNSCALED_CARTS)),
+            ] {
+                let dbg = format!("{:?}", (dbg_scale, dbg_coords));
+
+                let lattice_vectors = UNSCALED_LATTICE;
+                let positions = coord_data.map(|v| v.to_vec());
+
+                let poscar = RawPoscar {
+                    scale, positions, lattice_vectors,
+                    comment: "".into(),
+                    group_counts: vec![2],
+                    group_symbols: None,
+                    velocities: None,
+                    dynamics: None,
+                }.validate().unwrap();
+
+                // --------
+                // check all accessors
+                assert_eq!(poscar.scaled_volume(), SCALED_VOLUME, "{}", dbg);
+                assert_eq!(
+                    poscar.scaled_lattice_vectors(),
+                    SCALED_LATTICE,
+                    "{}", dbg,
+                );
+                assert_eq!(
+                    poscar.unscaled_lattice_vectors(),
+                    UNSCALED_LATTICE,
+                    "{}", dbg,
+                );
+                assert_eq!(poscar.frac_positions(), Cow::from(FRACS), "{}", dbg);
+                assert_eq!(
+                    poscar.unscaled_cart_positions(),
+                    Cow::from(UNSCALED_CARTS),
+                    "{}", dbg,
+                );
+                assert_eq!(
+                    poscar.scaled_cart_positions(),
+                    Cow::from(SCALED_CARTS),
+                    "{}", dbg,
+                );
+                assert_eq!(poscar.frac_velocities(), None, "{}", dbg);
+                assert_eq!(poscar.cart_velocities(), None, "{}", dbg);
+
+                // --------
+                // Check velocity accessors.
+                let mut poscar = poscar.raw();
+
+                // Move the data into the velocities.
+                // Set positions to something different to make sure
+                //   velocities are being read from the right field.
+                poscar.velocities = Some(poscar.positions);
+                poscar.positions = Coords::Cart(vec![[0f64; 3]; 2]);
+
+                let poscar = poscar.validate().unwrap();
+
+                assert_eq!(
+                    poscar.frac_velocities(),
+                    Some(Cow::from(FRACS)),
+                    "{}", dbg,
+                );
+                assert_eq!(
+                    poscar.cart_velocities(),
+                    Some(Cow::from(UNSCALED_CARTS)),
+                    "{}", dbg,
+                );
+            }
+        }
+    }
 }

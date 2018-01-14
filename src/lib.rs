@@ -77,13 +77,12 @@
 pub extern crate failure;
 extern crate dtoa;
 
-// general bail! and ensure! macros that don't constrain the type to failure::Error
-macro_rules! g_bail { ($e:expr $(,)*) => { return Err($e.into()); }; }
-macro_rules! g_ensure { ($cond:expr, $e:expr $(,)*) => { if !$cond { g_bail!($e); } }; }
-
+#[macro_use]
+mod util;
 mod parse;
 mod types;
 mod write;
+mod math;
 
 pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
 pub use types::ValidationError;
