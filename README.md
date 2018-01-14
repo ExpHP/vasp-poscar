@@ -4,7 +4,8 @@
 
 # POSCAR format for Rust
 
-<!-- TODO badges, link to documentation -->
+* [Release notes](doc/relnotes.md)
+* [API Documentation](https://docs.rs/vasp-poscar/*/vasp_poscar/)
 
 ```toml
 [dependencies]
