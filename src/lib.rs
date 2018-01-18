@@ -83,6 +83,8 @@ mod parse;
 mod types;
 mod write;
 mod math;
+mod builder;
 
 pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
 pub use types::ValidationError;
+pub use builder::{Builder, Zeroed};

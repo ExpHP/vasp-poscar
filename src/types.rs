@@ -242,50 +242,89 @@ impl Poscar {
 ///  0.25 0.25 0.25
 /// ```
 ///
-/// # Buyer beware
+/// # Construction
 ///
-/// All fields are public, allow you to **construct it using basic
-/// struct syntax:**
+/// ## From data
+///
+/// A `RawPoscar` can be constructed using the [`Builder`] API.
 ///
 /// ```rust
-/// use vasp_poscar::{RawPoscar, ScaleLine, Coords};
+/// use vasp_poscar::{Builder, ScaleLine, Coords};
 ///
 /// # #[allow(unused)]
-/// let poscar = RawPoscar {
-///     comment: "Cubic BN".into(),
-///     scale: ScaleLine::Factor(3.57),
-///     lattice_vectors: [
+/// let poscar =
+///     Builder::new()
+///     .comment("Cubic BN")
+///     .scale(ScaleLine::Factor(3.57))
+///     .lattice_vectors(&[
 ///         [0.0, 0.5, 0.5],
 ///         [0.5, 0.0, 0.5],
 ///         [0.5, 0.5, 0.0],
-///     ],
-///     group_symbols: Some(vec!["B".into(), "N".into()]),
-///     group_counts: vec![1, 1],
-///     positions: Coords::Frac(vec![
+///     ])
+///     .group_symbols(vec!["B", "N"])
+///     .group_counts(vec![1, 1])
+///     .positions(Coords::Frac(vec![
 ///         [0.00, 0.00, 0.00],
 ///         [0.25, 0.25, 0.25],
-///     ]),
-///     velocities: None,
-///     dynamics: None,
-/// };
+///     ]))
+///     .build_raw();
 /// ```
 ///
-/// This is, of course, is a double-edged sword.
-/// For better or worse,
-/// this type brings **simplicity at the cost of stability.**
-/// Be prepared for breakage as more fields are added;
-/// for now, you are advised to limit your usage of this type to
-/// a small number of self-contained functions. (e.g. conversions
-/// to and from a datatype of your own)
+/// ## From a file
+///
+/// You may parse the file into a Poscar first.
+///
+/// ```rust,no_run
+/// # #[derive(Debug)] enum Never {}
+/// #
+/// # impl<T: ::std::fmt::Display> From<T> for Never {
+/// #     fn from(x: T) -> Never { panic!("{}", x); }
+/// # }
+/// #
+/// # fn _main() -> Result<(), Never> {Ok({
+/// # use vasp_poscar::Poscar;
+/// #
+/// # #[allow(unused)]
+/// let poscar = Poscar::from_path("tests/POSCAR")?.raw();
+/// #
+/// # })}
+/// # fn main() { _main().unwrap() }
+/// ```
 ///
 /// # Display
 ///
-/// `RawPoscar` itself **cannot be printed.** To write out your modified
-/// file, use the [`validate`] method to obtain a [`Poscar`] first.
+/// Because it may contain invalid data, a `RawPoscar` object
+/// **cannot be printed.** To write a `RawPoscar` to a file,
+/// use the [`validate`] method to obtain a [`Poscar`] first.
+///
+/// ```rust,no_run
+/// # #[derive(Debug)] enum Never {}
+/// #
+/// # impl<T: ::std::fmt::Display> From<T> for Never {
+/// #     fn from(x: T) -> Never { panic!("{}", x); }
+/// # }
+/// #
+/// # fn _main() -> Result<(), Never> {Ok({
+/// # use vasp_poscar::RawPoscar;
+/// #
+/// # fn get_raw_poscar() -> RawPoscar { unimplemented!() }
+/// #
+/// // suppose you have a RawPoscar
+/// let raw = get_raw_poscar();
+///
+/// // validate() will "upgrade" it into a Poscar...
+/// let poscar = raw.validate()?;
+/// // ...which can be printed.
+/// print!("{}", poscar);
+/// #
+/// # })}
+/// # fn main() { _main().unwrap() }
+/// ```
 ///
 /// [VASP documentation]: https://cms.mpi.univie.ac.at/vasp/vasp/POSCAR_file.html
-/// [`validate`]: #method.validate
+/// [`validate`]: struct.Poscar.html#method.validate
 /// [`Poscar`]: struct.Poscar.html
+/// [`Builder`]: struct.Builder.html
 #[derive(Debug, Clone)]
 pub struct RawPoscar {
     pub comment: String,
@@ -464,9 +503,19 @@ pub enum Coords<T=Vec<[f64; 3]>> {
 // --------------------------------
 // Meat of the coordinate conversion logic
 
-type CoordsTag = Coords<()>;
-const CART: CoordsTag = Coords::Cart(());
-const FRAC: CoordsTag = Coords::Frac(());
+pub(crate) type CoordsTag = Coords<()>;
+pub(crate) const CART: CoordsTag = Coords::Cart(());
+pub(crate) const FRAC: CoordsTag = Coords::Frac(());
+
+impl<V> Coords<V> {
+    #[inline(always)]
+    pub(crate) fn tag(&self) -> CoordsTag
+    { self.as_ref().map(|_| ()) }
+
+    #[inline(always)]
+    pub(crate) fn of_tag(tag: CoordsTag, value: V) -> Coords<V>
+    { tag.map(|()| value) }
+}
 
 impl Coords {
     /// Convert into a specific Coord representations on demand.
@@ -475,7 +524,7 @@ impl Coords {
     ///
     /// This may compute a lattice inverse; don't use it in a tight loop.
     #[inline(always)]
-    fn to_tag(&self, lattice: &[[f64; 3]; 3], tag: Coords<()>) -> Cow<[[f64; 3]]>
+    pub(crate) fn to_tag(&self, lattice: &[[f64; 3]; 3], tag: Coords<()>) -> Cow<[[f64; 3]]>
     {
         use self::Coords::{Cart, Frac};
         match (self.as_ref(), tag) {
