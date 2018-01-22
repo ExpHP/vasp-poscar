@@ -20,6 +20,49 @@ use ::{ToN3};
 
 /// Allows construction of [`Poscar`]/[`RawPoscar`] via the builder pattern.
 ///
+/// # Overview
+///
+/// Builder is the most straightforward way to construct
+/// a [`Poscar`] or [`RawPoscar`] object from data in memory.
+///
+/// ```rust
+/// use vasp_poscar::{Builder, ScaleLine, Coords};
+///
+/// # #[allow(unused)]
+/// let poscar =
+///     Builder::new()
+///     .comment("Cubic BN")
+///     .scale(ScaleLine::Factor(3.57))
+///     .lattice_vectors(&[
+///         [0.0, 0.5, 0.5],
+///         [0.5, 0.0, 0.5],
+///         [0.5, 0.5, 0.0],
+///     ])
+///     .group_symbols(vec!["B", "N"])
+///     .group_counts(vec![1, 1])
+///     .positions(Coords::Frac(vec![
+///         [0.00, 0.00, 0.00],
+///         [0.25, 0.25, 0.25],
+///     ]))
+///     .build_raw(); // or .build()?;
+/// ```
+///
+/// Most fields have reasonable defaults, and even
+/// those fields which you are required to set provide
+/// helpers for selecting "unreasonable" defaults.
+///
+/// ```rust
+/// use vasp_poscar::{Builder, Zeroed, Coords};
+///
+/// # #[allow(unused)]
+/// let poscar =
+///     Builder::new()
+///     .dummy_lattice_vectors()
+///     .positions(Coords::Frac(Zeroed))
+///     .group_counts(vec![3])
+///     .build_raw();
+/// ```
+///
 /// # General notes
 ///
 /// **Working with this API requires you to be familiar with the POSCAR
