@@ -612,8 +612,8 @@ where R: BufRead, P: AsRef<Path>,
         // - the first out of N lines of velocity data
         // - a trailing blank line (possibly one of many)
         // - a malformed file
-        match (line.as_str().trim(), status) {
-            ("", PresenceIs::Possible) => {
+        match (status, line.as_str().trim().is_empty()) {
+            (PresenceIs::Possible, true) => {
                 // Another empty line. We can safely say there are no velocities.
 
                 // Nothing else may possibly exist in the file, since the predictor
@@ -624,8 +624,9 @@ where R: BufRead, P: AsRef<Path>,
                 None
             },
 
-            (_, PresenceIs::Required) |
-            (_, PresenceIs::Possible) => {
+            (PresenceIs::Possible, false) | // content after blank control line
+            (PresenceIs::Required, _)       // control line was non-blank
+            => {
                 // Velocities must be present!
 
                 // Prepare to read N-1 more lines
