@@ -9,7 +9,7 @@
 
 ```toml
 [dependencies]
-vasp-poscar = "0.1.1"
+vasp-poscar = "0.2.0"
 ```
 
 A parser and printer for the POSCAR file format for representing crystallographic compounds.
@@ -72,9 +72,9 @@ The structure in a POSCAR is *always* periodic in 3 dimensions. Lower-dimensiona
 
 POSCAR also has some optional sections that are probably mostly really only used by VASP itself:
 
-* (**not yet supported**) Velocities
+* Velocities
 * Selective dynamics, which allows sites to be constrained to movement along a subset of the lattice vectors.
-* (**not yet supported**) The... um... *"predictor corrector."*
+* **(TODO)** The... um... *"predictor corrector."*
 
 ### The nitty gritty
 
@@ -91,11 +91,11 @@ A somewhat fuller specification of the format's **syntax** (*as implemented by t
 * **reasonable diagnostics** on malformed files, with special consideration given to errors that are easy to make
 * **round-trippable precision**; when a POSCAR is read in, it does not automatically absorb the scale into the lattice matrix, or convert everything into its favorite representation (direct vs cartesian). *Those are __your__ decisions to make!*
 
-`vasp-poscar` is secondarily a crate for *managing the redundant forms of data that exist within the file.*  While not currently implemented, it is eventually planned for this crate to provide basic facilities for:
+`vasp-poscar` is secondarily a crate for *managing the redundant forms of data that exist within the file.*  Notably:
 
 * Obtaining the scaled lattice and *true* cartesian coordinates
-* Converting between direct and cartesian representations
-* Manipulating the scale and lattice with respect to each other (e.g. switching between scale and volume, or absorbing the scale into the lattice)
+* **(TODO)** Converting between direct and cartesian representations
+* **(TODO)** Manipulating the scale and lattice with respect to each other (e.g. switching between scale and volume, or absorbing the scale into the lattice)
 
 `vasp-poscar` is **not really a crate for doing science.**  It will *never* provide things like symmetry analysis, primitive structure search, supercell construction, perturbation of positions, or cutting across a plane, etc.  These things are simply not its job.
 
