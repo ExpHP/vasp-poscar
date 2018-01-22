@@ -63,16 +63,9 @@ use ::{ToN3};
 ///     .build_raw();
 /// ```
 ///
-/// # General notes
-///
 /// **Working with this API requires you to be familiar with the POSCAR
 /// format.** Its setters map almost one-to-one with the sections of a
 /// POSCAR file (though there are a few additional conveniences).
-///
-/// There are two groups of methods:
-///
-/// * **setters**: e.g. [`positions`], [`comment`], ...
-/// * **build methods**: [`build`] and [`build_raw`].
 ///
 /// # Defaults
 ///
@@ -109,7 +102,7 @@ use ::{ToN3};
 /// If you wish to reuse a `Builder`, you must clone it before calling
 /// one of these methods.
 ///
-/// [`ValidationError`]: ../struct.ValidationError.html
+/// [`ValidationError`]: ../enum.ValidationError.html
 /// [`Poscar`]: ../struct.Poscar.html
 /// [`RawPoscar`]: ../struct.RawPoscar.html
 /// [`Zeroed`]: struct.Zeroed.html
@@ -512,31 +505,22 @@ impl Builder {
 impl Builder {
     /// Creates a [`Poscar`].
     ///
-    /// # Errors
+    /// # [Errors: See `ValidationError`]
     ///
-    /// Conditions for error are documented on the page for
-    /// [`ValidationError`].
+    /// # [Panics: See toplevel documentation]
     ///
-    /// # Panics
-    ///
-    /// This method (and methods called after it) may panic.
-    /// See the [toplevel documentation] on `Builder` for more information.
-    ///
-    /// [toplevel documentation]: #
-    /// [`ValidationError`]: ../struct.ValidationError.html
     /// [`Poscar`]: ../struct.Poscar.html
+    /// [Errors: See `ValidationError`]: ../enum.ValidationError.html
+    /// [Panics: See toplevel documentation]: #panics
     pub fn build(&mut self) -> Result<Poscar, ValidationError>
     { self.build_raw().validate() }
 
     /// Creates a [`RawPoscar`].
     ///
-    /// # Panics
+    /// # [Panics: See toplevel documentation]
     ///
-    /// This method (and methods called after it) may panic.
-    /// See the [toplevel documentation] on `Builder` for more information.
-    ///
-    /// [toplevel documentation]: #
     /// [`RawPoscar`]: ../struct.RawPoscar.html
+    /// [Panics: See toplevel documentation]: #panics
     pub fn build_raw(&mut self) -> RawPoscar
     {
         let Data {
