@@ -7,7 +7,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::{Builder, Zeroed};
 use ::math::{inv_f64, det_f64};
 use ::std::borrow::{Cow};
 
@@ -66,6 +65,8 @@ impl Poscar {
 
 #[test]
 fn test_group_iters() {
+    use ::{Builder, Zeroed};
+
     let poscar =
         Builder::new()
         .group_counts(vec![2, 5, 1])

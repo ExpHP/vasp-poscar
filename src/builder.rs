@@ -184,8 +184,15 @@ mod positions {
             fn _get(self) -> Positions;
         }
 
-        impl<T: AsRef<[[f64; 3]]>> Sealed for Coords<T> {
-            fn _get(self) -> Positions { Positions::These(self.map(|v| v.as_ref().to_vec())) }
+        impl<Vs, V> Sealed for Coords<Vs>
+        where
+            Vs: IntoIterator<Item=V>,
+            V: To3<f64>,
+        {
+            fn _get(self) -> Positions
+            { Positions::These(self.map(|v| {
+                v.into_iter().map(To3::_to_array_3).collect()
+            }))}
         }
 
         impl Sealed for Coords<Zeroed> {
@@ -193,7 +200,11 @@ mod positions {
         }
     }
 
-    impl<T: AsRef<[[f64; 3]]>> PositionsArgument for Coords<T> { }
+    impl<Vs, V> PositionsArgument for Coords<Vs>
+    where
+        Vs: IntoIterator<Item=V>,
+        V: To3<f64>,
+    { }
     impl PositionsArgument for Coords<Zeroed> { }
 }
 
@@ -212,8 +223,15 @@ mod velocities {
             fn _get(self) -> Velocities;
         }
 
-        impl<T: AsRef<[[f64; 3]]>> Sealed for Coords<T> {
-            fn _get(self) -> Velocities { Velocities::These(self.map(|v| v.as_ref().to_owned())) }
+        impl<Vs, V> Sealed for Coords<Vs>
+        where
+            Vs: IntoIterator<Item=V>,
+            V: To3<f64>,
+        {
+            fn _get(self) -> Velocities
+            { Velocities::These(self.map(|v| {
+                v.into_iter().map(To3::_to_array_3).collect()
+            }))}
         }
 
         impl Sealed for Coords<Zeroed> {
@@ -221,7 +239,11 @@ mod velocities {
         }
     }
 
-    impl<T: AsRef<[[f64; 3]]>> VelocitiesArgument for Coords<T> { }
+    impl<Vs, V> VelocitiesArgument for Coords<Vs>
+    where
+        Vs: IntoIterator<Item=V>,
+        V: To3<f64>,
+    { }
     impl VelocitiesArgument for Coords<Zeroed> { }
 }
 
@@ -240,12 +262,21 @@ mod dynamics {
             fn _get(self) -> Dynamics;
         }
 
-        impl<T: AsRef<[[bool; 3]]>> Sealed for T {
-            fn _get(self) -> Dynamics { Dynamics::These(self.as_ref().to_vec()) }
+        impl<Vs, V> Sealed for Vs
+        where
+            Vs: IntoIterator<Item=V>,
+            V: To3<bool>,
+        {
+            fn _get(self) -> Dynamics
+            { Dynamics::These(self.into_iter().map(To3::_to_array_3).collect()) }
         }
     }
 
-    impl<T: AsRef<[[bool; 3]]>> DynamicsArgument for T { }
+    impl<Vs, V> DynamicsArgument for Vs
+    where
+        Vs: IntoIterator<Item=V>,
+        V: To3<bool>,
+    { }
 }
 
 const ALREADY_CONSUMED_MSG: &'static str = "\
@@ -471,6 +502,31 @@ impl Builder {
         }
     }
 }
+
+/// Types isomorphic to `[X; 3]`.
+pub trait To3<X> {
+    #[doc(hidden)]
+    fn _to_array_3(self) -> [X; 3];
+}
+
+macro_rules! impl_to3_for_copy {
+    ($X:ty) => {
+        impl To3<$X> for [$X; 3] {
+            fn _to_array_3(self) -> [$X; 3] { self }
+        }
+
+        impl<'a> To3<$X> for &'a [$X; 3] {
+            fn _to_array_3(self) -> [$X; 3] { *self }
+        }
+
+        impl To3<$X> for ($X, $X, $X) {
+            fn _to_array_3(self) -> [$X; 3] { [self.0, self.1, self.2] }
+        }
+    };
+}
+
+impl_to3_for_copy!{ f64 }
+impl_to3_for_copy!{ bool }
 
 #[cfg(test)]
 #[deny(unused)]
