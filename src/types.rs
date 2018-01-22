@@ -15,6 +15,7 @@ use ::std::borrow::{Cow};
 /// The key parts of the API are currently:
 ///
 /// * **Reading files** through [`Poscar::from_reader`].
+/// * **In-memory construction** via [`Builder`].
 /// * **Manipulation/inspection** of the data via [`raw`] and [`RawPoscar`].
 ///   *(this will be supplanted with cleaner solutions over time)*
 /// * **Writing files** through `std::fmt::Display`. (e.g. `print!` and `write!`)
@@ -22,6 +23,7 @@ use ::std::borrow::{Cow};
 /// [`Poscar::from_reader`]: #method.from_reader
 /// [`RawPoscar`]: struct.RawPoscar.html
 /// [`into_raw`]: #method.into_raw
+/// [`Builder`]: builder/struct.Builder.html
 #[derive(Debug, Clone)]
 pub struct Poscar(pub(crate) RawPoscar);
 

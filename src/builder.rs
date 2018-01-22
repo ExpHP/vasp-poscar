@@ -1,3 +1,19 @@
+// Copyright 2018 Michael Lamparski
+// Part of the vasp-poscar crate.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Poscar construction through the builder pattern.
+//!
+//! This module houses the [`Builder`] type and other types which are
+//! very closely related to it and not otherwise useful.
+//!
+//! [`Builder`]: struct.Builder.html
+
 use ::{ScaleLine, Coords, RawPoscar, Poscar, ValidationError};
 use ::types::{CoordsTag};
 use ::{ToN3};
