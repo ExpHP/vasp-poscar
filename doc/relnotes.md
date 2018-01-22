@@ -2,6 +2,7 @@
 
 ## **v0.2.0**:
 * Added accessors for most immediately useful data to `Poscar`.
+* Added `Builder` api to replace struct-syntax construction of `RawPoscar`.
 
 ## **v0.1.1**:
 * Fix missing metadata for the crates.io page.

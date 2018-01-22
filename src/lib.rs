@@ -83,8 +83,61 @@ mod parse;
 mod types;
 mod write;
 mod math;
-mod builder;
+pub mod builder;
 
 pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
 pub use types::ValidationError;
 pub use builder::{Builder, Zeroed};
+
+/// Types convertable into `Vec<[X; 3]>`.
+///
+/// Appears in generic bounds for some of the crate's public API methods
+/// (such as [`Builder`]).
+///
+/// # Example implementors:
+/// <!-- @@To3 -->
+///
+/// * `Vec<[X; 3]>`
+/// * `&[[X; 3]]` (where `X: Clone`)
+/// * Any iterable of `(X, X, X)`
+///
+/// [`Builder`]: builder/struct.Builder.html
+pub trait ToN3<X>: IntoIterator {
+    #[doc(hidden)]
+    fn _to_enn_3(self) -> Vec<[X; 3]>;
+}
+
+impl<X, V, Vs> ToN3<X> for Vs
+where
+    Vs: IntoIterator<Item=V>,
+    V: To3<X>,
+{
+    fn _to_enn_3(self) -> Vec<[X; 3]>
+    { self.into_iter().map(To3::_to_array_3).collect() }
+}
+
+/// Types convertible into `[X; 3]`.
+///
+/// Appears in generic bounds for some of the crate's public API methods
+/// (such as [`Builder`]).
+///
+/// [`Builder`]: builder/struct.Builder.html
+pub trait To3<X> {
+    #[doc(hidden)]
+    fn _to_array_3(self) -> [X; 3];
+}
+
+// NOTE: When adding new impls, search for the string @@To3@@
+//       and update those docs accordingly.
+
+impl<X> To3<X> for [X; 3] {
+    fn _to_array_3(self) -> [X; 3] { self }
+}
+
+impl<'a, X> To3<X> for &'a [X; 3] where X: Clone {
+    fn _to_array_3(self) -> [X; 3] { self.clone() }
+}
+
+impl<X> To3<X> for (X, X, X) {
+    fn _to_array_3(self) -> [X; 3] { [self.0, self.1, self.2] }
+}

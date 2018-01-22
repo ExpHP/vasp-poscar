@@ -1,5 +1,6 @@
 use ::{ScaleLine, Coords, RawPoscar, Poscar, ValidationError};
 use ::types::{CoordsTag};
+use ::{ToN3};
 
 /// Allows construction of [`Poscar`]/[`RawPoscar`] via the builder pattern.
 ///
@@ -49,9 +50,9 @@ use ::types::{CoordsTag};
 /// If you wish to reuse a `Builder`, you must clone it before calling
 /// one of these methods.
 ///
-/// [`ValidationError`]: struct.ValidationError.html
-/// [`Poscar`]: struct.Poscar.html
-/// [`RawPoscar`]: struct.RawPoscar.html
+/// [`ValidationError`]: ../struct.ValidationError.html
+/// [`Poscar`]: ../struct.Poscar.html
+/// [`RawPoscar`]: ../struct.RawPoscar.html
 /// [`Zeroed`]: struct.Zeroed.html
 /// [`positions`]: #method.positions
 /// [`comment`]: #method.comment
@@ -74,9 +75,10 @@ struct Data {
     dynamics: Dynamics,
 }
 
-/// Generates zero-filled coordinate data.
+/// Special value accepted by some methods of Builder.
 ///
 /// Accepted by [`Builder::positions`] and [`Builder::velocities`].
+/// Generates zero-filled coordinate data.
 ///
 /// ```rust
 /// use vasp_poscar::{Builder, Zeroed, Coords};
@@ -173,6 +175,12 @@ pub use self::positions::PositionsArgument;
 mod positions {
     use super::*;
 
+    /// Valid arguments for [`Builder::positions`].
+    ///
+    /// Please don't worry about this trait.  Anything you need to know
+    /// should be documented under [`Builder::positions`].
+    ///
+    /// [`Builder::positions`]: struct.Builder.html#method.positions
     pub trait PositionsArgument: Sealed { }
 
     pub(crate) use self::private::Sealed;
@@ -184,15 +192,9 @@ mod positions {
             fn _get(self) -> Positions;
         }
 
-        impl<Vs, V> Sealed for Coords<Vs>
-        where
-            Vs: IntoIterator<Item=V>,
-            V: To3<f64>,
-        {
+        impl<Vs: ToN3<f64>> Sealed for Coords<Vs> {
             fn _get(self) -> Positions
-            { Positions::These(self.map(|v| {
-                v.into_iter().map(To3::_to_array_3).collect()
-            }))}
+            { Positions::These(self.map(ToN3::_to_enn_3)) }
         }
 
         impl Sealed for Coords<Zeroed> {
@@ -200,11 +202,7 @@ mod positions {
         }
     }
 
-    impl<Vs, V> PositionsArgument for Coords<Vs>
-    where
-        Vs: IntoIterator<Item=V>,
-        V: To3<f64>,
-    { }
+    impl<Vs: ToN3<f64>> PositionsArgument for Coords<Vs> { }
     impl PositionsArgument for Coords<Zeroed> { }
 }
 
@@ -212,6 +210,12 @@ pub use self::velocities::VelocitiesArgument;
 mod velocities {
     use super::*;
 
+    /// Valid arguments for [`Builder::velocities`].
+    ///
+    /// Please don't worry about this trait.  Anything you need to know
+    /// should be documented under [`Builder::velocities`].
+    ///
+    /// [`Builder::velocities`]: struct.Builder.html#method.velocities
     pub trait VelocitiesArgument: Sealed { }
 
     pub(crate) use self::private::Sealed;
@@ -223,15 +227,9 @@ mod velocities {
             fn _get(self) -> Velocities;
         }
 
-        impl<Vs, V> Sealed for Coords<Vs>
-        where
-            Vs: IntoIterator<Item=V>,
-            V: To3<f64>,
-        {
+        impl<Vs: ToN3<f64>> Sealed for Coords<Vs> {
             fn _get(self) -> Velocities
-            { Velocities::These(self.map(|v| {
-                v.into_iter().map(To3::_to_array_3).collect()
-            }))}
+            { Velocities::These(self.map(ToN3::_to_enn_3)) }
         }
 
         impl Sealed for Coords<Zeroed> {
@@ -239,11 +237,7 @@ mod velocities {
         }
     }
 
-    impl<Vs, V> VelocitiesArgument for Coords<Vs>
-    where
-        Vs: IntoIterator<Item=V>,
-        V: To3<f64>,
-    { }
+    impl<Vs: ToN3<f64>> VelocitiesArgument for Coords<Vs> { }
     impl VelocitiesArgument for Coords<Zeroed> { }
 }
 
@@ -251,6 +245,12 @@ pub use self::dynamics::DynamicsArgument;
 mod dynamics {
     use super::*;
 
+    /// Valid arguments for [`Builder::dynamics`].
+    ///
+    /// Please don't worry about this trait.  Anything you need to know
+    /// should be documented under [`Builder::dynamics`].
+    ///
+    /// [`Builder::dynamics`]: struct.Builder.html#method.dynamics
     pub trait DynamicsArgument: Sealed { }
 
     pub(crate) use self::private::Sealed;
@@ -262,21 +262,13 @@ mod dynamics {
             fn _get(self) -> Dynamics;
         }
 
-        impl<Vs, V> Sealed for Vs
-        where
-            Vs: IntoIterator<Item=V>,
-            V: To3<bool>,
-        {
+        impl<Vs: ToN3<bool>> Sealed for Vs {
             fn _get(self) -> Dynamics
-            { Dynamics::These(self.into_iter().map(To3::_to_array_3).collect()) }
+            { Dynamics::These(self._to_enn_3()) }
         }
     }
 
-    impl<Vs, V> DynamicsArgument for Vs
-    where
-        Vs: IntoIterator<Item=V>,
-        V: To3<bool>,
-    { }
+    impl<Vs: ToN3<bool>> DynamicsArgument for Vs { }
 }
 
 const ALREADY_CONSUMED_MSG: &'static str = "\
@@ -293,8 +285,11 @@ impl Builder {
     { self.0.take().expect(ALREADY_CONSUMED_MSG) }
 }
 
+/// # Initialization
 impl Builder {
-    /// Alias for `Default::default()`.
+    /// Alias for [`Default`]`::default`.
+    ///
+    /// [`Default`]: https://doc.rust-lang.org/std/default/trait.Default.html
     pub fn new() -> Builder
     { Default::default() }
 
@@ -309,6 +304,7 @@ impl Builder {
     }
 }
 
+/// # Setting metadata
 impl Builder {
     /// Set the comment line.
     ///
@@ -316,7 +312,10 @@ impl Builder {
     /// is spectacularly exciting.
     pub fn comment<S: Into<String>>(&mut self, s: S) -> &mut Self
     { self.as_mut().comment = s.into(); self }
+}
 
+/// # Setting the lattice
+impl Builder {
     /// Set the scale line.
     ///
     /// Defaults to `ScaleLine::Factor(1.0)`.
@@ -341,21 +340,34 @@ impl Builder {
     /// to the builder will ultimately be discarded.
     pub fn dummy_lattice_vectors(&mut self) -> &mut Self
     { self.as_mut().lattice_vectors = Lattice::This(Box::new(EYE)); self }
+}
 
+/// # Setting coordinate data
+impl Builder {
     /// Set unscaled positions as they would be written in the Poscar.
     ///
     /// **This field is required.** The [`build_raw`] and [`build`] methods will
     /// panic unless this method has been called.
     ///
-    /// The argument should be FIXME.
+    /// The argument should be an iterable over `[f64; 3]`, `&[f64; 3]`,
+    /// or `(f64, f64, f64)`, wrapped in the [`Coords`] enum.
+    /// Examples of valid arguments: <!-- @@To3 -->
+    ///
+    /// * `Coords<Vec<[f64; 3]>>`
+    /// * `Coords<&[f64; 3]>`
+    /// * `Coords::Cart(xs.iter().zip(&ys).zip(&zs).map(|((&x, &y), &z)| (x, y, z)))`,
+    ///   where `xs` and family are `Vec<f64>`.
+    ///
     /// You may also use `Coords::Cart(Zeroed)` or `Coords::Frac(Zeroed)`
     /// to set dummy values equal in length to the total atom count.
+    /// See [`Zeroed`].
     ///
     /// # Panics
     ///
     /// If [`Zeroed`] is used, then you must also supply [`group_counts`],
     /// or else [`build_raw`] and [`build`] will panic.
     ///
+    /// [`Coords`]: struct.Coords.html
     /// [`Zeroed`]: struct.Zeroed.html
     /// [`build_raw`]: #method.build_raw
     /// [`build`]: #method.build
@@ -363,26 +375,44 @@ impl Builder {
     pub fn positions<V>(&mut self, vs: V) -> &mut Self
     where V: PositionsArgument,
     { self.as_mut().positions = vs._get(); self }
+}
 
+/// # Setting velocities
+impl Builder {
     /// Set velocities as they would be written in the file.
     ///
-    /// The argument should be FIXME.
+    /// The argument should be an iterable over `[f64; 3]`, `&[f64; 3]`,
+    /// or `(f64, f64, f64)`, wrapped in the [`Coords`] enum.
+    /// Examples of valid arguments:  <!-- @@To3 -->
+    ///
+    /// * `Coords<Vec<[f64; 3]>>`
+    /// * `Coords<&[f64; 3]>`
+    /// * `Coords::Cart(xs.iter().zip(&ys).zip(&zs).map(|((&x, &y), &z)| (x, y, z)))`,
+    ///   where `xs` and family are `Vec<f64>`.
+    ///
     /// You may also use `Coords::Cart(Zeroed)` or `Coords::Frac(Zeroed)`
     /// to set dummy values equal in length to the total atom count.
+    /// See [`Zeroed`].
+    ///
+    /// [`Coords`]: struct.Coords.html
+    /// [`Zeroed`]: struct.Zeroed.html
     pub fn velocities<V>(&mut self, vs: V) -> &mut Self
     where V: VelocitiesArgument,
     { self.as_mut().velocities = vs._get(); self }
 
-    /// Restore the default behavior.  The poscar will not have velocities.
+    /// Undoes the effect of `velocities`, removing that section from the file.
     pub fn no_velocities(&mut self) -> &mut Self
     { self.as_mut().velocities = Velocities::None; self }
+}
 
+/// # Setting atom types
+impl Builder {
     /// Set explicit counts for each atom type.
     pub fn group_counts<Cs>(&mut self, cs: Cs) -> &mut Self
     where Cs: IntoIterator<Item=usize>,
     { self.as_mut().group_counts = Counts::These(cs.into_iter().collect()); self }
 
-    /// Unset explicit counts, restoring the default behavior.
+    /// Undoes the effect of `group_counts`, restoring the default behavior.
     ///
     /// By default, it is assumed that all atoms are the same type,
     /// resulting in a single atom type of count `positions.len()`.
@@ -394,22 +424,32 @@ impl Builder {
     where Cs: IntoIterator, Cs::Item: Into<String>,
     { self.as_mut().group_symbols = Symbols::These(syms.into_iter().map(Into::into).collect()); self }
 
-    /// Default behavior. The poscar will not have group symbols.
+    /// Undoes the effect of `group_symbols`, removing the symbols line from the file.
     pub fn no_group_symbols(&mut self) -> &mut Self
     { self.as_mut().group_symbols = Symbols::None; self }
+}
 
+/// # Enabling selective dynamics
+impl Builder {
     /// Set selective dynamics flags.
     ///
-    /// The argument should be TODO.
+    /// The argument should be an iterable over `[bool; 3]`, `&[bool; 3]`,
+    /// or `(bool, bool, bool)`. Examples of valid arguments: <!-- @@To3 -->
+    ///
+    /// * `Vec<[bool; 3]>`
+    /// * `&[bool; 3]`
+    /// * `xs.iter().zip(&ys).zip(&zs).map(|((&x, &y), &z)| (x, y, z))`,
+    ///   where `xs` and family are `Vec<bool>`.
     pub fn dynamics<V>(&mut self, vs: V) -> &mut Self
     where V: DynamicsArgument,
     { self.as_mut().dynamics = vs._get(); self }
 
-    /// Default behavior. The poscar will not have selective dynamics.
+    /// Undoes the effect of `dynamics`, removing that section from the file.
     pub fn no_dynamics(&mut self) -> &mut Self
     { self.as_mut().dynamics = Dynamics::None; self }
 }
 
+/// # Building
 impl Builder {
     /// Creates a [`Poscar`].
     ///
@@ -424,12 +464,12 @@ impl Builder {
     /// See the [toplevel documentation] on `Builder` for more information.
     ///
     /// [toplevel documentation]: #
-    /// [`ValidationError`]: struct.ValidationError.html
-    /// [`Poscar`]: struct.Poscar.html
+    /// [`ValidationError`]: ../struct.ValidationError.html
+    /// [`Poscar`]: ../struct.Poscar.html
     pub fn build(&mut self) -> Result<Poscar, ValidationError>
     { self.build_raw().validate() }
 
-    /// Creates a [`RawPoscar`]
+    /// Creates a [`RawPoscar`].
     ///
     /// # Panics
     ///
@@ -437,7 +477,7 @@ impl Builder {
     /// See the [toplevel documentation] on `Builder` for more information.
     ///
     /// [toplevel documentation]: #
-    /// [`RawPoscar`]: struct.RawPoscar.html
+    /// [`RawPoscar`]: ../struct.RawPoscar.html
     pub fn build_raw(&mut self) -> RawPoscar
     {
         let Data {
@@ -502,31 +542,6 @@ impl Builder {
         }
     }
 }
-
-/// Types isomorphic to `[X; 3]`.
-pub trait To3<X> {
-    #[doc(hidden)]
-    fn _to_array_3(self) -> [X; 3];
-}
-
-macro_rules! impl_to3_for_copy {
-    ($X:ty) => {
-        impl To3<$X> for [$X; 3] {
-            fn _to_array_3(self) -> [$X; 3] { self }
-        }
-
-        impl<'a> To3<$X> for &'a [$X; 3] {
-            fn _to_array_3(self) -> [$X; 3] { *self }
-        }
-
-        impl To3<$X> for ($X, $X, $X) {
-            fn _to_array_3(self) -> [$X; 3] { [self.0, self.1, self.2] }
-        }
-    };
-}
-
-impl_to3_for_copy!{ f64 }
-impl_to3_for_copy!{ bool }
 
 #[cfg(test)]
 #[deny(unused)]

@@ -103,8 +103,10 @@ The second flag line is interpreted as follows:
   * This includes an empty line. (the CONTCAR file produced by VASP actually does this!!)
   * This even includes a line like `"   Cartesian"`. I am so, so sorry. The most this crate can do in such cases is to produce a warning via `log!`.
 
+<!--
 (FIXME use log)
 (FIXME link all the things)
+-->
 
 Each data line begins with **three reals**. If Selective dynamics is enabled, then these are followed by **three logicals**. *The rest of the line is a comment.*
 

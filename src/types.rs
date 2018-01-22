@@ -329,7 +329,7 @@ impl Poscar {
 /// [VASP documentation]: https://cms.mpi.univie.ac.at/vasp/vasp/POSCAR_file.html
 /// [`validate`]: struct.Poscar.html#method.validate
 /// [`Poscar`]: struct.Poscar.html
-/// [`Builder`]: struct.Builder.html
+/// [`Builder`]: builder/struct.Builder.html
 #[derive(Debug, Clone)]
 pub struct RawPoscar {
     pub comment: String,
