@@ -21,7 +21,7 @@ use ::std::borrow::{Cow};
 ///
 /// [`Poscar::from_reader`]: #method.from_reader
 /// [`RawPoscar`]: struct.RawPoscar.html
-/// [`raw`]: #method.raw
+/// [`into_raw`]: #method.into_raw
 #[derive(Debug, Clone)]
 pub struct Poscar(pub(crate) RawPoscar);
 
@@ -39,7 +39,7 @@ impl Poscar {
     /// for common operations may be provided on `Poscar` itself.
     ///
     /// [`validate`]: struct.RawPoscar.html#method.validate
-    pub fn raw(self) -> RawPoscar { self.0 }
+    pub fn into_raw(self) -> RawPoscar { self.0 }
 }
 
 /// # Accessing simple properties
@@ -86,7 +86,7 @@ fn test_group_iters() {
         Some(vec!["C", "B", "C"]),
     );
 
-    let mut poscar = poscar.raw();
+    let mut poscar = poscar.into_raw();
     poscar.group_symbols = None;
     let poscar = poscar.validate().unwrap();
 
@@ -284,7 +284,7 @@ impl Poscar {
 /// # use vasp_poscar::Poscar;
 /// #
 /// # #[allow(unused)]
-/// let poscar = Poscar::from_path("tests/POSCAR")?.raw();
+/// let poscar = Poscar::from_path("tests/POSCAR")?.into_raw();
 /// #
 /// # })}
 /// # fn main() { _main().unwrap() }
@@ -686,7 +686,7 @@ mod accessor_tests {
 
                 // --------
                 // Check velocity accessors.
-                let mut poscar = poscar.raw();
+                let mut poscar = poscar.into_raw();
 
                 // Move the data into the velocities.
                 // Set positions to something different to make sure

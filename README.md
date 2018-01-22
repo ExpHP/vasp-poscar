@@ -45,7 +45,7 @@ let file = io::BufReader::new(File::open("POSCAR")?);
 let poscar = Poscar::from_reader(file)?;
 
 // get a RawPoscar object with public fields you can freely match on and manipulate
-let mut poscar = poscar.raw();
+let mut poscar = poscar.into_raw();
 
 assert_eq!(poscar.scale, ScaleLine::Factor(3.7));
 

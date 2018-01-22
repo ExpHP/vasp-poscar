@@ -38,7 +38,7 @@ fn comment() {
             1
             Direct
             0 0 0
-        ").unwrap().raw().comment,
+        ").unwrap().into_raw().comment,
         "  this is a # boring ! comment",
     );
 }
@@ -55,7 +55,7 @@ fn scale() {
             1
             Direct
             0 0 0
-        ").unwrap().raw().scale,
+        ").unwrap().into_raw().scale,
         ScaleLine::Factor(2.45),
     );
 
@@ -69,7 +69,7 @@ fn scale() {
             1
             Direct
             0 0 0
-        ").unwrap().raw().scale,
+        ").unwrap().into_raw().scale,
         ScaleLine::Volume(2.45),
     );
 }
@@ -89,7 +89,7 @@ fn lattice() {
             1
             Direct
             0 0 0
-        ").unwrap().raw().lattice_vectors,
+        ").unwrap().into_raw().lattice_vectors,
         [
             [1.25, 2.5, 3.0],
             [-1.25, 2.5, 3.0],
@@ -112,7 +112,7 @@ fn atom_types() {
         0 0 0
         0.25 0.25 0.25
         0.5 0.5 0.5
-    ").unwrap().raw();
+    ").unwrap().into_raw();
 
     assert_eq!(p.group_symbols, Some(vec!["C".to_string(), "N".to_string()]));
     assert_eq!(p.group_counts, vec![2, 1]);
@@ -128,7 +128,7 @@ fn atom_types() {
         0 0 0
         0.25 0.25 0.25
         0.5 0.5 0.5
-    ").unwrap().raw();
+    ").unwrap().into_raw();
 
     assert_eq!(p.group_symbols, None);
     assert_eq!(p.group_counts, vec![2, 1]);
@@ -150,7 +150,7 @@ fn positions() {
             0 0.25 0.5
             1 1.25 1.5
             2 2.25 2.5
-        ").unwrap().raw().positions,
+        ").unwrap().into_raw().positions,
         Coords::Cart(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],
@@ -170,7 +170,7 @@ fn positions() {
             0 0.25 0.5
             1 1.25 1.5
             2 2.25 2.5
-        ").unwrap().raw().positions,
+        ").unwrap().into_raw().positions,
         Coords::Frac(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],
@@ -194,7 +194,7 @@ fn dynamics() {
             0 0.25 0.5 T F T
             1 1.25 1.5 F F T
             2 2.25 2.5 T T F
-        ").unwrap().raw().dynamics,
+        ").unwrap().into_raw().dynamics,
         Some(vec![
             [ true, false,  true],
             [false, false,  true],
@@ -214,7 +214,7 @@ fn dynamics() {
             0 0.25 0.5
             1 1.25 1.5
             2 2.25 2.5
-        ").unwrap().raw().dynamics,
+        ").unwrap().into_raw().dynamics,
         None,
     );
 }
@@ -234,7 +234,7 @@ fn velocities() {
             Cartesian
             0 0 0
             0 0 0
-        ").unwrap().raw().velocities,
+        ").unwrap().into_raw().velocities,
         None,
     );
 
@@ -254,7 +254,7 @@ fn velocities() {
             Cartesian
             0 0.25 0.5
             1 1.25 1.5
-        ").unwrap().raw().velocities,
+        ").unwrap().into_raw().velocities,
         Some(Coords::Cart(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],
@@ -275,7 +275,7 @@ fn velocities() {
             Direct
             0 0.25 0.5
             1 1.25 1.5
-        ").unwrap().raw().velocities,
+        ").unwrap().into_raw().velocities,
         Some(Coords::Frac(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],
@@ -298,7 +298,7 @@ fn velocities() {
 
             0 0.25 0.5
             1 1.25 1.5
-        ").unwrap().raw().velocities,
+        ").unwrap().into_raw().velocities,
         Some(Coords::Frac(vec![
             [0.0, 0.25, 0.5],
             [1.0, 1.25, 1.5],

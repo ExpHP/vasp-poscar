@@ -41,7 +41,7 @@
 //! let poscar = Poscar::from_reader(EXAMPLE.as_bytes())?;
 //!
 //! // get a RawPoscar object with public fields you can freely match on and manipulate
-//! let mut poscar = poscar.raw();
+//! let mut poscar = poscar.into_raw();
 //! assert_eq!(poscar.scale, ScaleLine::Factor(3.7));
 //!
 //! poscar.comment = "[Subject Name Here] was here".into();
