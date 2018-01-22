@@ -2,6 +2,63 @@ use ::{ScaleLine, Coords, RawPoscar, Poscar, ValidationError};
 use ::types::{CoordsTag};
 
 /// Allows construction of [`Poscar`]/[`RawPoscar`] via the builder pattern.
+///
+/// # General notes
+///
+/// **Working with this API requires you to be familiar with the POSCAR
+/// format.** Its setters map almost one-to-one with the sections of a
+/// POSCAR file (though there are a few additional conveniences).
+///
+/// There are two groups of methods:
+///
+/// * **setters**: e.g. [`positions`], [`comment`], ...
+/// * **build methods**: [`build`] and [`build_raw`].
+///
+/// # Defaults
+///
+/// All optional fields of a Poscar are disabled by default.
+/// Others may have default values or behavior that is detailed in the documentation
+/// of the appropriate setter. Some fields, like [`positions`] and [`lattice_vectors`],
+/// have *no default*, and failure to set them will result in a panic at runtime in
+/// the build method.
+///
+/// # Panics
+///
+/// ## Contract violations
+///
+/// Generally speaking, invalid data provided to the Builder will at worst
+/// produce a [`ValidationError`], and even then, it will only do so when
+/// building a [`Poscar`]. (building a [`RawPoscar`] performs no validation)
+///
+/// However, egregious misuse of the Builder API may make it impossible to
+/// construct even a [`RawPoscar`]. In this case, the build methods will panic.
+/// In particular, the rules are:
+///
+/// **All required fields must be set:**
+///
+/// * [`positions`]
+/// * [`lattice_vectors`]
+///
+/// If positions is set to [`Zeroed`], then **[`group_counts`]
+/// also becomes required.**
+///
+/// ## Poisoning
+///
+/// Calling [`build_raw`] or [`build`] "consumes" the `Builder` in a manner
+/// which causes **all future method calls** to panic at runtime.
+/// If you wish to reuse a `Builder`, you must clone it before calling
+/// one of these methods.
+///
+/// [`ValidationError`]: struct.ValidationError.html
+/// [`Poscar`]: struct.Poscar.html
+/// [`RawPoscar`]: struct.RawPoscar.html
+/// [`Zeroed`]: struct.Zeroed.html
+/// [`positions`]: #method.positions
+/// [`comment`]: #method.comment
+/// [`lattice_vectors`]: #method.lattice_vectors
+/// [`group_counts`]: #method.group_counts
+/// [`build_raw`]: #method.build_raw
+/// [`build`]: #method.build
 #[derive(Debug)]
 pub struct Builder(Option<Data>);
 
@@ -221,32 +278,28 @@ impl Builder {
     }
 }
 
-/// # Comment line
-///
-/// Defaults to "POSCAR File", which you will no doubt agree
-/// is spectacularly exciting.
 impl Builder {
+    /// Set the comment line.
+    ///
+    /// Defaults to "POSCAR File", which you will no doubt agree
+    /// is spectacularly exciting.
     pub fn comment<S: Into<String>>(&mut self, s: S) -> &mut Self
     { self.as_mut().comment = s.into(); self }
-}
 
-/// # Scale line
-///
-/// Defaults to `ScaleLine::Factor(1.0)`.
-impl Builder {
+    /// Set the scale line.
+    ///
+    /// Defaults to `ScaleLine::Factor(1.0)`.
     pub fn scale(&mut self, s: ScaleLine) -> &mut Self
     { self.as_mut().scale = s; self }
-}
 
-/// # Lattice vectors
-///
-/// **This field is required.** The [`build_raw`] and [`build`] methods will panic
-/// unless one of these methods has been called.
-///
-/// [`build_raw`]: #method.build_raw
-/// [`build`]: #method.build
-impl Builder {
     /// Set the unscaled lattice vectors, as they would be written in the file.
+    ///
+    /// **This field is required.** The [`build_raw`] and [`build`] methods will panic
+    /// unless this method or [`dummy_lattice_vectors`] has been called.
+    ///
+    /// [`dummy_lattice_vectors`]: #method.dummy_lattice_vectors
+    /// [`build_raw`]: #method.build_raw
+    /// [`build`]: #method.build
     pub fn lattice_vectors(&mut self, vectors: &[[f64; 3]; 3]) -> &mut Self
     { self.as_mut().lattice_vectors = Lattice::This(Box::new(*vectors)); self }
 
@@ -257,14 +310,11 @@ impl Builder {
     /// to the builder will ultimately be discarded.
     pub fn dummy_lattice_vectors(&mut self) -> &mut Self
     { self.as_mut().lattice_vectors = Lattice::This(Box::new(EYE)); self }
-}
 
-/// # Positions
-///
-/// **This field is required.** The [`build_raw`] and [`build`] methods will panic
-/// unless one of these methods has been called.
-impl Builder {
     /// Set unscaled positions as they would be written in the Poscar.
+    ///
+    /// **This field is required.** The [`build_raw`] and [`build`] methods will
+    /// panic unless this method has been called.
     ///
     /// The argument should be FIXME.
     /// You may also use `Coords::Cart(Zeroed)` or `Coords::Frac(Zeroed)`
@@ -282,14 +332,6 @@ impl Builder {
     pub fn positions<V>(&mut self, vs: V) -> &mut Self
     where V: PositionsArgument,
     { self.as_mut().positions = vs._get(); self }
-}
-
-/// # Velocities
-///
-/// By default, a Poscar will not contain any velocities.
-impl Builder {
-    // NOTE: having a function take Option<V> would lead to type ambiguity
-    //       issues for `None`.
 
     /// Set velocities as they would be written in the file.
     ///
@@ -300,28 +342,22 @@ impl Builder {
     where V: VelocitiesArgument,
     { self.as_mut().velocities = vs._get(); self }
 
-    /// Default behavior.  The poscar will not have velocities.
+    /// Restore the default behavior.  The poscar will not have velocities.
     pub fn no_velocities(&mut self) -> &mut Self
     { self.as_mut().velocities = Velocities::None; self }
-}
 
-/// # Group counts
-///
-/// By default, it is assumed that all atoms are the same type,
-/// resulting in a single atom type of count `positions.len()`.
-impl Builder {
     /// Set explicit counts for each atom type.
     pub fn group_counts<Cs>(&mut self, cs: Cs) -> &mut Self
     where Cs: IntoIterator<Item=usize>,
     { self.as_mut().group_counts = Counts::These(cs.into_iter().collect()); self }
 
     /// Unset explicit counts, restoring the default behavior.
+    ///
+    /// By default, it is assumed that all atoms are the same type,
+    /// resulting in a single atom type of count `positions.len()`.
     pub fn auto_group_counts(&mut self) -> &mut Self
     { self.as_mut().group_counts = Counts::Auto; self }
-}
 
-/// # Group symbols
-impl Builder {
     /// Set symbols for each atom type.
     pub fn group_symbols<Cs>(&mut self, syms: Cs) -> &mut Self
     where Cs: IntoIterator, Cs::Item: Into<String>,
@@ -330,10 +366,7 @@ impl Builder {
     /// Default behavior. The poscar will not have group symbols.
     pub fn no_group_symbols(&mut self) -> &mut Self
     { self.as_mut().group_symbols = Symbols::None; self }
-}
 
-/// # Selective dynamics
-impl Builder {
     /// Set selective dynamics flags.
     ///
     /// The argument should be TODO.
@@ -346,45 +379,6 @@ impl Builder {
     { self.as_mut().dynamics = Dynamics::None; self }
 }
 
-
-
-/// # The final step: Building
-///
-/// These methods construct a `Poscar` or similar object using the
-/// data provided to the builder.
-///
-/// ## Panics
-///
-/// ### Contract violations
-///
-/// While most issues will be returned as [`ValidationError`]s, egregious
-/// misuse of the Builder API may make it impossible to construct even a
-/// [`RawPoscar`], and in this case the functions will panic. In particular:
-///
-/// All required fields must be set:
-///
-/// * [`positions`]
-/// * [`lattice_vectors`]
-///
-/// If positions is set to [`Zeroed`], then [`group_counts`]
-/// also becomes required.
-///
-/// ### Poisoning
-///
-/// Calling [`build_raw`] or [`build`] "consumes" the `Builder` in a manner
-/// which causes **all future method calls** to panic at runtime.
-/// If you wish to reuse a `Builder`, you must clone it before calling
-/// one of these methods.
-///
-/// [`ValidationError`]: struct.ValidationError.html
-/// [`Poscar`]: struct.Poscar.html
-/// [`RawPoscar`]: struct.RawPoscar.html
-/// [`Zeroed`]: struct.Zeroed.html
-/// [`positions`]: #method.positions
-/// [`lattice_vectors`]: #method.lattice_vectors
-/// [`group_counts`]: #method.group_counts
-/// [`build_raw`]: #method.build_raw
-/// [`build`]: #method.build
 impl Builder {
     /// Creates a [`Poscar`].
     ///
@@ -396,8 +390,9 @@ impl Builder {
     /// # Panics
     ///
     /// This method (and methods called after it) may panic.
-    /// See the documentation on the impl block for more information.
+    /// See the [toplevel documentation] on `Builder` for more information.
     ///
+    /// [toplevel documentation]: #
     /// [`ValidationError`]: struct.ValidationError.html
     /// [`Poscar`]: struct.Poscar.html
     pub fn build(&mut self) -> Result<Poscar, ValidationError>
@@ -408,8 +403,9 @@ impl Builder {
     /// # Panics
     ///
     /// This method (and methods called after it) may panic.
-    /// See the documentation on the impl block for more information.
+    /// See the [toplevel documentation] on `Builder` for more information.
     ///
+    /// [toplevel documentation]: #
     /// [`RawPoscar`]: struct.RawPoscar.html
     pub fn build_raw(&mut self) -> RawPoscar
     {
@@ -471,6 +467,7 @@ impl Builder {
             comment, scale, lattice_vectors,
             group_symbols, group_counts,
             positions, velocities, dynamics,
+            _cant_touch_this: (),
         }
     }
 }

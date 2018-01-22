@@ -7,6 +7,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use ::{Builder, Zeroed};
 use ::math::{inv_f64, det_f64};
 use ::std::borrow::{Cow};
 
@@ -65,16 +66,13 @@ impl Poscar {
 
 #[test]
 fn test_group_iters() {
-    let poscar = RawPoscar {
-        comment: "".into(),
-        dynamics: None,
-        group_counts: vec![2, 5, 1],
-        group_symbols: Some(vec!["C".into(), "B".into(), "C".into()]),
-        scale: ScaleLine::Factor(1.0),
-        lattice_vectors: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-        positions: Coords::Cart(vec![[0.0; 3]; 8]),
-        velocities: None,
-    }.validate().unwrap();
+    let poscar =
+        Builder::new()
+        .group_counts(vec![2, 5, 1])
+        .group_symbols(vec!["C", "B", "C"])
+        .dummy_lattice_vectors()
+        .positions(Coords::Cart(Zeroed))
+        .build().unwrap();
 
     // verify that .rev() and .len() are usable
     assert_eq!(poscar.group_counts().len(), 3);
@@ -291,6 +289,12 @@ impl Poscar {
 /// # fn main() { _main().unwrap() }
 /// ```
 ///
+/// # Manipulation
+///
+/// All fields are public, barring a single trivial private field
+/// used to prevent construction. You can freely access and manipulate
+/// the data fields as you see fit.
+///
 /// # Display
 ///
 /// Because it may contain invalid data, a `RawPoscar` object
@@ -336,6 +340,8 @@ pub struct RawPoscar {
     pub velocities: Option<Coords>,
     pub dynamics: Option<Vec<[bool; 3]>>,
     // pub predictor_corrector: Option<PredictorCorrector>,
+
+    pub(crate) _cant_touch_this: (),
 }
 
 // --------------------------------
@@ -579,6 +585,7 @@ impl<A> Coords<A> {
 #[deny(unused)]
 mod accessor_tests {
     use super::*;
+    use ::Builder;
 
     // This test aims to maximize bang-for-the-buck by trying
     // to break as many broken implementations as possible.
@@ -642,17 +649,12 @@ mod accessor_tests {
             ] {
                 let dbg = format!("{:?}", (dbg_scale, dbg_coords));
 
-                let lattice_vectors = UNSCALED_LATTICE;
-                let positions = coord_data.map(|v| v.to_vec());
-
-                let poscar = RawPoscar {
-                    scale, positions, lattice_vectors,
-                    comment: "".into(),
-                    group_counts: vec![2],
-                    group_symbols: None,
-                    velocities: None,
-                    dynamics: None,
-                }.validate().unwrap();
+                let poscar =
+                    Builder::new()
+                    .scale(scale)
+                    .positions(coord_data.map(|v| v.to_vec()))
+                    .lattice_vectors(&UNSCALED_LATTICE)
+                    .build().unwrap();
 
                 // --------
                 // check all accessors

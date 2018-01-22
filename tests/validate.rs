@@ -12,26 +12,16 @@
 #![deny(unused)]
 
 extern crate vasp_poscar;
-use vasp_poscar::{RawPoscar, Coords, ScaleLine, ValidationError};
+use vasp_poscar::{Builder, RawPoscar, Coords, ScaleLine, ValidationError};
 
 #[macro_use]
 mod common;
 
 fn boring_poscar() -> RawPoscar {
-    RawPoscar {
-        comment: "comment".into(),
-        scale: ScaleLine::Factor(1.0),
-        lattice_vectors: [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ],
-        group_symbols: None,
-        group_counts: vec![1],
-        positions: Coords::Frac(vec![[0.0, 0.0, 0.0]]),
-        dynamics: None,
-        velocities: None,
-    }
+    Builder::new()
+        .dummy_lattice_vectors()
+        .positions(Coords::Frac(vec![[0.0; 3]; 1]))
+        .build_raw()
 }
 
 #[test]

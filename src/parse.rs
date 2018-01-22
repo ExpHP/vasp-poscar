@@ -660,5 +660,6 @@ where R: BufRead, P: AsRef<Path>,
     Ok(RawPoscar {
         comment, scale, positions, lattice_vectors,
         group_symbols, group_counts, velocities, dynamics,
+        _cant_touch_this: (),
     }.validate().expect("an invariant was not checked during parsing (this is a bug!)"))
 }

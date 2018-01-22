@@ -20,6 +20,7 @@ fn display(w: &mut fmt::Formatter, poscar: &Poscar) -> fmt::Result
     let &Poscar(RawPoscar {
         scale, ref lattice_vectors, ref velocities, ref dynamics,
         ref comment, ref positions, ref group_counts, ref group_symbols,
+        _cant_touch_this: (),
     }) = poscar;
 
     assert!(!comment.contains("\n"), "BUG");
