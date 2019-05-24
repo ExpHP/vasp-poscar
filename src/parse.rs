@@ -379,7 +379,7 @@ enum CoordLineType {
 }
 
 fn classify_coord_line(mut line: &str) -> CoordLineType {
-    line = line.trim_right();
+    line = line.trim_end();
 
     if line.is_empty() {
         return CoordLineType::EmptyOrWhitespace;
