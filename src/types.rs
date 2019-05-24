@@ -149,8 +149,18 @@ impl Poscar {
 
 /// # Accessing positions
 impl Poscar {
+    /// Get either `scaled_cart_positions` or `frac_positions`, depending on
+    /// which is stored.
+    pub fn scaled_positions(&self) -> Coords<Cow<'_, [[f64; 3]]>>
+    {
+        match self.0.positions {
+            Coords::Cart(_) => Coords::Cart(self.scaled_cart_positions()),
+            Coords::Frac(_) => Coords::Frac(self.frac_positions()),
+        }
+    }
+
     /// Compute the Cartesian positions, taking into account the scale factor.
-    pub fn scaled_cart_positions(&self) -> Cow<[[f64; 3]]>
+    pub fn scaled_cart_positions(&self) -> Cow<'_, [[f64; 3]]>
     {
         // TODO maybe later: a reference can be returned when
         //   carts are stored and the scale line is Factor(1.0)
@@ -164,18 +174,18 @@ impl Poscar {
     }
 
     /// Get the Cartesian positions, as they would be written in the file.
-    pub fn unscaled_cart_positions(&self) -> Cow<[[f64; 3]]>
+    pub fn unscaled_cart_positions(&self) -> Cow<'_, [[f64; 3]]>
     { self.0.positions.to_tag(&self.unscaled_lattice(), CART) }
 
     /// Get the fractional positions, as they would be written in the file.
-    pub fn frac_positions(&self) -> Cow<[[f64; 3]]>
+    pub fn frac_positions(&self) -> Cow<'_, [[f64; 3]]>
     { self.0.positions.to_tag(&self.unscaled_lattice(), FRAC) }
 }
 
 /// # Accessing velocities
 impl Poscar {
     /// Get the fractional-space velocities.
-    pub fn frac_velocities(&self) -> Option<Cow<[[f64; 3]]>>
+    pub fn frac_velocities(&self) -> Option<Cow<'_, [[f64; 3]]>>
     { self.0.velocities.as_ref().map(|c| {
         c.to_tag(&self.unscaled_lattice(), FRAC)
     })}
@@ -183,7 +193,7 @@ impl Poscar {
     /// Get the cartesian velocities.
     ///
     /// Notice that the scale factor does not affect velocities.
-    pub fn cart_velocities(&self) -> Option<Cow<[[f64; 3]]>>
+    pub fn cart_velocities(&self) -> Option<Cow<'_, [[f64; 3]]>>
     { self.0.velocities.as_ref().map(|c| {
         c.to_tag(&self.unscaled_lattice(), CART)
     })}
@@ -681,6 +691,14 @@ mod accessor_tests {
                 assert_eq!(
                     poscar.scaled_cart_positions(),
                     Cow::from(SCALED_CARTS),
+                    "{}", dbg,
+                );
+                assert_eq!(
+                    poscar.scaled_positions(),
+                    match coord_data {
+                        Coords::Cart(_) => Coords::Cart(Cow::from(SCALED_CARTS)),
+                        Coords::Frac(_) => Coords::Frac(Cow::from(FRACS)),
+                    },
                     "{}", dbg,
                 );
                 assert_eq!(poscar.frac_velocities(), None, "{}", dbg);
