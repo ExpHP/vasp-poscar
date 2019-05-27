@@ -9,7 +9,7 @@
 
 ```toml
 [dependencies]
-vasp-poscar = "0.2.0"
+vasp-poscar = "0.3.0"
 ```
 
 A parser and printer for the POSCAR file format for representing crystallographic compounds.
