@@ -479,6 +479,17 @@ impl Builder {
     /// Undoes the effect of `group_symbols`, removing the symbols line from the file.
     pub fn no_group_symbols(&mut self) -> &mut Self
     { self.as_mut().group_symbols = Symbols::None; self }
+
+    /// Set symbols for each site in the unit cell.
+    ///
+    /// This is a convenience wrapper that calls both `group_symbols` and `group_counts`.
+    pub fn site_symbols<Cs>(&mut self, syms: Cs) -> &mut Self
+    where Cs: IntoIterator, Cs::Item: Into<String>,
+    {
+        let (counts, symbols) = get_run_length_encoding(syms.into_iter().map(|s| s.into()));
+        self.group_counts(counts)
+            .group_symbols(symbols)
+    }
 }
 
 /// # Enabling selective dynamics
@@ -586,6 +597,44 @@ impl Builder {
     }
 }
 
+fn get_run_length_encoding<X: PartialEq>(xs: impl IntoIterator<Item=X>) -> (Vec<usize>, Vec<X>) {
+    let mut iter = xs.into_iter();
+    let mut last = match iter.next() {
+        None => return (vec![], vec![]),
+        Some(x) => x,
+    };
+    let mut count = 1;
+
+    let (mut lens, mut values) = (vec![], vec![]);
+    for x in iter {
+        if last == x {
+            count += 1;
+        } else {
+            lens.push(std::mem::replace(&mut count, 1));
+            values.push(std::mem::replace(&mut last, x));
+        }
+    }
+    lens.push(count);
+    values.push(last);
+    (lens, values)
+}
+
+#[test]
+fn test_rle() {
+    assert_eq!(
+        get_run_length_encoding(vec![] as Vec<()>),
+        (vec![], vec![]),
+    );
+    assert_eq!(
+        get_run_length_encoding("a".chars()),
+        (vec![1], vec!['a']),
+    );
+    assert_eq!(
+        get_run_length_encoding("abbbaac".chars()),
+        (vec![1, 3, 2, 1], vec!['a', 'b', 'a', 'c']),
+    );
+}
+
 #[cfg(test)]
 #[deny(unused)]
 mod tests {
@@ -649,7 +698,6 @@ mod tests {
             );
         }
     }
-
 
     #[test]
     fn test_velocities() {
@@ -737,6 +785,19 @@ mod tests {
             Builder::new_dumdum()
                 .group_symbols(vec!["A", "B", "C"])
                 .build_raw().group_symbols,
+        );
+    }
+
+    #[test]
+    fn test_site_symbols() {
+        let raw = Builder::new_dumdum()
+            .site_symbols(vec!["A", "B", "B", "B", "A", "A"])
+            .build_raw();
+
+        assert_eq!(raw.group_counts, vec![1, 3, 2]);
+        assert_eq!(
+            raw.group_symbols,
+            Some(vec!["A", "B", "A"].into_iter().map(|s| s.to_string()).collect::<Vec<_>>()),
         );
     }
 
