@@ -53,16 +53,39 @@ impl Poscar {
     pub fn group_symbols(&self) -> Option<impl VeclikeIterator<Item=&str> + '_>
     {
         self.0.group_symbols.as_ref()
-            .map(|syms| Box::new(syms.iter().map(|sym| &sym[..])) as Box<_>)
+            .map(|syms| syms.iter().map(|sym| &sym[..]))
     }
 
     /// Get the counts of each atom type.
     pub fn group_counts(&self) -> impl VeclikeIterator<Item=usize> + '_
-    { Box::new(self.0.group_counts.iter().map(|&c| c)) }
+    { self.0.group_counts.iter().map(|&c| c) }
+
+    /// Get the number of sites in the unit cell.
+    pub fn num_sites(&self) -> usize
+    { self.0.positions.as_ref().raw().len() }
+
+    /// Get the symbols for each site in the unit cell.
+    pub fn site_symbols(&self) -> Option<impl VeclikeIterator<Item=&str> + '_>
+    {
+        self.group_symbols().map(|group_symbols| {
+            assert_eq!(
+                self.0.group_counts.len(), group_symbols.len(),
+                "(BUG) length invariant violated!",
+            );
+
+            WithKnownLen {
+                iter: {
+                    self.0.group_counts.iter().zip(group_symbols)
+                        .flat_map(|(&count, symbol)| RepeatN { value: symbol, n: count })
+                },
+                len: self.num_sites(),
+            }
+        })
+    }
 }
 
 #[test]
-fn test_group_iters() {
+fn test_group_iters() -> Result<(), failure::Error> {
     use crate::{Builder, Zeroed};
 
     let poscar =
@@ -71,7 +94,7 @@ fn test_group_iters() {
         .group_symbols(vec!["C", "B", "C"])
         .dummy_lattice_vectors()
         .positions(Coords::Cart(Zeroed))
-        .build().unwrap();
+        .build()?;
 
     // verify that .rev() and .len() are usable
     assert_eq!(poscar.group_counts().len(), 3);
@@ -84,11 +107,55 @@ fn test_group_iters() {
         Some(vec!["C", "B", "C"]),
     );
 
-    let mut poscar = poscar.into_raw();
-    poscar.group_symbols = None;
-    let poscar = poscar.validate().unwrap();
+    let poscar = {
+        let mut poscar = poscar.into_raw();
+        poscar.group_symbols = None;
+        poscar.validate()?
+    };
 
     assert!(poscar.group_symbols().is_none());
+    Ok(())
+}
+
+#[test]
+fn test_site_symbols() -> Result<(), failure::Error> {
+    use crate::{Builder, Zeroed};
+
+    let builder = {
+        Builder::new()
+            .positions(Coords::Frac(Zeroed))
+            .dummy_lattice_vectors()
+            .group_counts([2, 3, 1].iter().cloned())
+            .clone()
+    };
+
+    fn strings<S: ToString>(strs: impl IntoIterator<Item=S>) -> Vec<String>
+    { strs.into_iter().map(|s| s.to_string()).collect() }
+
+    let get_group_symbols = |poscar: &Poscar| poscar.group_symbols().map(strings);
+    let get_site_symbols = |poscar: &Poscar| poscar.site_symbols().map(strings);
+
+    let poscar = builder.clone().build()?;
+    assert_eq!(poscar.group_counts().collect::<Vec<_>>(), vec![2, 3, 1]);
+    assert_eq!(get_group_symbols(&poscar), None);
+    assert_eq!(get_site_symbols(&poscar), None);
+
+    let poscar = builder.clone().group_symbols(vec!["Xe", "C", "Xe"]).build()?;
+    assert_eq!(poscar.group_counts().collect::<Vec<_>>(), vec![2, 3, 1]);
+    assert_eq!(get_group_symbols(&poscar), Some(strings(vec!["Xe", "C", "Xe"])));
+    assert_eq!(get_site_symbols(&poscar), Some(strings(vec!["Xe", "Xe", "C", "C", "C", "Xe"])));
+
+    // test DoubleEndedIterator and ExactSizeIterator impls
+    let poscar = builder.clone().group_symbols(vec!["Xe", "C", "B"]).build()?;
+    let mut iter = poscar.site_symbols().unwrap();
+    assert_eq!(iter.len(), 6);
+    assert_eq!(iter.next(), Some("Xe"));
+    assert_eq!(iter.len(), 5);
+    assert_eq!(iter.next_back(), Some("B"));
+    assert_eq!(iter.len(), 4);
+    assert_eq!(strings(iter.rev()), strings(vec!["C", "C", "C", "Xe"]));
+
+    Ok(())
 }
 
 /// Combines useful standard library iterator traits into one.
@@ -559,6 +626,65 @@ impl<A> Coords<A> {
         Coords::Frac(x) => x,
     }}
 }
+
+// --------------------------------
+
+/// Adds `ExactSizeIterator` to an arbitrary iterator.
+struct WithKnownLen<Iter> {
+    iter: Iter,
+    len: usize,
+}
+
+impl<Iter: Iterator> Iterator for WithKnownLen<Iter> {
+    type Item = Iter::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.len = usize::saturating_sub(self.len, 1);
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    { (self.len, Some(self.len)) }
+}
+
+impl<Iter: Iterator> ExactSizeIterator for WithKnownLen<Iter> { }
+
+impl<Iter: DoubleEndedIterator> DoubleEndedIterator for WithKnownLen<Iter> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.len = usize::saturating_sub(self.len, 1);
+        self.iter.next_back()
+    }
+}
+
+/// `std::iter::repeat(x).take(n)` with a `DoubleEndedIterator` impl
+struct RepeatN<X> {
+    value: X,
+    n: usize,
+}
+
+impl<X: Clone> Iterator for RepeatN<X> {
+    type Item = X;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.n {
+            0 => None,
+            _ => {
+                self.n -= 1;
+                Some(self.value.clone())
+            },
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    { (self.n, Some(self.n)) }
+}
+
+impl<X: Clone> DoubleEndedIterator for RepeatN<X> {
+    fn next_back(&mut self) -> Option<Self::Item>
+    { self.next() }
+}
+
+impl<X: Clone> ExactSizeIterator for RepeatN<X> { }
 
 // --------------------------------
 

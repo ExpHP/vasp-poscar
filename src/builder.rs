@@ -112,7 +112,7 @@ use crate::{ToN3};
 /// [`group_counts`]: #method.group_counts
 /// [`build_raw`]: #method.build_raw
 /// [`build`]: #method.build
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Builder(Option<Data>);
 
 #[derive(Debug, Clone)]
