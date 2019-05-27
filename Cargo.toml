@@ -8,6 +8,7 @@ keywords = ["physics", "crystallography", "io"]
 categories = ["filesystem", "parsing", "science", "simulation"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "ExpHP/vasp-poscar" }
@@ -20,7 +21,7 @@ failure = "0.1.1"
 serde = { version = "1.0.27", features = ["derive"] }
 serde_yaml = "0.7.3"
 indoc = "0.2.3"
-version-sync = "0.5.0"
+version-sync = "0.8"
 
 [[test]]
 harness = false

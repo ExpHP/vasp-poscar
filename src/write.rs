@@ -7,15 +7,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::std::fmt;
+use std::fmt;
 use crate::{Poscar, RawPoscar, ScaleLine, Coords};
 
 impl fmt::Display for Poscar {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
     { crate::write::display(f, self) }
 }
 
-fn display(w: &mut fmt::Formatter, poscar: &Poscar) -> fmt::Result
+fn display(w: &mut fmt::Formatter<'_>, poscar: &Poscar) -> fmt::Result
 {
     let &Poscar(RawPoscar {
         scale, ref lattice_vectors, ref velocities, ref dynamics,
@@ -100,10 +100,10 @@ where
 
 struct Dtoa(f64);
 impl fmt::Display for Dtoa {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // not the most efficient thing in the world...
         let mut bytes = vec![];
-        ::dtoa::write(&mut bytes, self.0).map_err(|_| fmt::Error)?;
+        dtoa::write(&mut bytes, self.0).map_err(|_| fmt::Error)?;
         f.write_str(&String::from_utf8(bytes).unwrap())
     }
 }
@@ -116,7 +116,7 @@ where A: Clone,
       F: Fn(A) -> B,
       B: fmt::Display,
 {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let By3(ref arr, ref f) = *self;
         write!(fmt, "{} {} {}", f(arr[0].clone()), f(arr[1].clone()), f(arr[2].clone()))
     }

@@ -16,7 +16,6 @@
 #![deny(unused)]
 
 #[macro_use] extern crate indoc;
-extern crate vasp_poscar;
 
 use vasp_poscar::Poscar;
 

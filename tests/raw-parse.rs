@@ -16,8 +16,8 @@
 
 #[macro_use]
 extern crate indoc;
-extern crate vasp_poscar;
-use ::vasp_poscar::{Poscar, ScaleLine, Coords};
+
+use vasp_poscar::{Poscar, ScaleLine, Coords};
 
 macro_rules! poscar {
     ($s:expr) => {{

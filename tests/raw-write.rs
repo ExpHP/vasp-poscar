@@ -14,8 +14,7 @@
 //!
 //! Is incidentally sensitive to output format.
 
-extern crate vasp_poscar;
-use ::vasp_poscar::{Builder, RawPoscar, ScaleLine, Coords};
+use vasp_poscar::{Builder, RawPoscar, ScaleLine, Coords};
 
 fn boring_poscar() -> RawPoscar {
     Builder::new()

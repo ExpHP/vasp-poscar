@@ -8,7 +8,7 @@
 // except according to those terms.
 
 use crate::math::{inv_f64, det_f64};
-use ::std::borrow::{Cow};
+use std::borrow::{Cow};
 
 /// Represents a POSCAR file.
 ///
@@ -52,7 +52,7 @@ impl Poscar {
     /// Get the symbols for each atom type, if provided.
     ///
     /// The returned object is an `Iterator` of `&str`.
-    pub fn group_symbols(&self) -> Option<GroupSymbols>
+    pub fn group_symbols(&self) -> Option<GroupSymbols<'_>>
     {
         self.0.group_symbols.as_ref()
             .map(|syms| Box::new(syms.iter().map(|sym| &sym[..])) as Box<_>)
@@ -61,7 +61,7 @@ impl Poscar {
     /// Get the counts of each atom type.
     ///
     /// The returned object is an `Iterator` of `usize`.
-    pub fn group_counts(&self) -> GroupCounts
+    pub fn group_counts(&self) -> GroupCounts<'_>
     { Box::new(self.0.group_counts.iter().map(|&c| c)) }
 }
 
@@ -104,12 +104,12 @@ impl<Xs: ExactSizeIterator + DoubleEndedIterator> VeclikeIterator for Xs { }
 /// Returned by [`Poscar::group_symbols`].
 ///
 /// [`Poscar::group_symbols`]: struct.Poscar.html#method.group_symbols
-pub type GroupSymbols<'a> = Box<VeclikeIterator<Item=&'a str> + 'a>;
+pub type GroupSymbols<'a> = Box<dyn VeclikeIterator<Item=&'a str> + 'a>;
 
 /// Returned by [`Poscar::group_counts`].
 ///
 /// [`Poscar::group_counts`]: struct.Poscar.html#method.group_counts
-pub type GroupCounts<'a> = Box<VeclikeIterator<Item=usize> + 'a>;
+pub type GroupCounts<'a> = Box<dyn VeclikeIterator<Item=usize> + 'a>;
 
 /// # Accessing computed properties
 impl Poscar {
@@ -288,7 +288,7 @@ impl Poscar {
 /// ```rust,no_run
 /// # #[derive(Debug)] enum Never {}
 /// #
-/// # impl<T: ::std::fmt::Display> From<T> for Never {
+/// # impl<T: std::fmt::Display> From<T> for Never {
 /// #     fn from(x: T) -> Never { panic!("{}", x); }
 /// # }
 /// #
@@ -317,7 +317,7 @@ impl Poscar {
 /// ```rust,no_run
 /// # #[derive(Debug)] enum Never {}
 /// #
-/// # impl<T: ::std::fmt::Display> From<T> for Never {
+/// # impl<T: std::fmt::Display> From<T> for Never {
 /// #     fn from(x: T) -> Never { panic!("{}", x); }
 /// # }
 /// #
@@ -421,7 +421,7 @@ pub enum ValidationError {
 fn _check_conv() {
     fn panic<T>() -> T { panic!() }
     let e: ValidationError = panic();
-    let _: ::failure::Error = e.into();
+    let _: failure::Error = e.into();
 }
 
 impl RawPoscar {
@@ -543,7 +543,7 @@ impl Coords {
     ///
     /// This may compute a lattice inverse; don't use it in a tight loop.
     #[inline(always)]
-    pub(crate) fn to_tag(&self, lattice: &[[f64; 3]; 3], tag: Coords<()>) -> Cow<[[f64; 3]]>
+    pub(crate) fn to_tag(&self, lattice: &[[f64; 3]; 3], tag: Coords<()>) -> Cow<'_, [[f64; 3]]>
     {
         use self::Coords::{Cart, Frac};
         match (self.as_ref(), tag) {

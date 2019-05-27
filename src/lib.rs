@@ -16,7 +16,7 @@
 //! ```rust
 //! # #[derive(Debug)] enum Never {}
 //! #
-//! # impl<T: ::std::fmt::Display> From<T> for Never {
+//! # impl<T: std::fmt::Display> From<T> for Never {
 //! #     fn from(x: T) -> Never { panic!("{}", x); }
 //! # }
 //! #
@@ -75,7 +75,6 @@
 
 #[macro_use]
 pub extern crate failure;
-extern crate dtoa;
 
 #[macro_use]
 mod util;

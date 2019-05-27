@@ -9,12 +9,12 @@
 
 use crate::{Coords, RawPoscar, ScaleLine, Poscar};
 
-use ::std::rc::Rc;
-use ::std::io::prelude::*;
-use ::std::ops::Range;
-use ::std::str::FromStr;
-use ::std::cmp::Ordering;
-use ::std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::io::prelude::*;
+use std::ops::Range;
+use std::str::FromStr;
+use std::cmp::Ordering;
+use std::path::{Path, PathBuf};
 
 pub(crate) use self::error::ParseError;
 
@@ -30,21 +30,21 @@ impl Poscar {
     // NOTE: This form is unable to include a filename in error messages.
     // FIXME how do other libraries handle this?
     //       maybe the filename is simply not this crate's responsibility?
-    pub fn from_reader<R: BufRead>(f: R) -> Result<Self, ::failure::Error>
+    pub fn from_reader<R: BufRead>(f: R) -> Result<Self, failure::Error>
     { _from_reader(f, None::<PathBuf>) }
 
     /// Reads a POSCAR from the filesystem.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ::failure::Error>
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, failure::Error>
     {
-        let f = ::std::fs::File::open(path.as_ref())?;
-        let f = ::std::io::BufReader::new(f);
+        let f = std::fs::File::open(path.as_ref())?;
+        let f = std::io::BufReader::new(f);
         _from_reader(f, Some(path))
     }
 }
 
 mod error {
     use super::*;
-    use ::std::fmt;
+    use std::fmt;
 
     /// A (non-IO-related) error that occurred while parsing a POSCAR.
     #[derive(Debug, Fail)]
@@ -58,7 +58,7 @@ mod error {
     }
 
     impl fmt::Display for ParseError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self.path.as_ref() {
                 Some(p) => write!(f, "{}:", p.display())?,
                 None => write!(f, "<input>:")?,
@@ -74,7 +74,7 @@ mod error {
         }
     }
 
-    use ::std::num::ParseFloatError;
+    use std::num::ParseFloatError;
 
     #[derive(Debug, Fail)]
     pub(crate) enum Kind {
@@ -98,7 +98,7 @@ pub(crate) struct Lines<I> {
     path: Option<Rc<PathBuf>>,
     cur: usize,
     // (fused to guarantee that scanning for EOF is an idempotent operation)
-    lines: ::std::iter::Fuse<I>,
+    lines: std::iter::Fuse<I>,
 }
 
 // string with span info for errors
@@ -113,7 +113,7 @@ pub(crate) struct Spanned<S=String> {
 impl<E, I> Lines<I>
 where
     I: Iterator<Item=Result<String, E>>,
-    E: ::failure::Fail,
+    E: failure::Fail,
 {
     pub(crate) fn new<P: AsRef<Path>>(lines: I, path: Option<P>) -> Self
     { Self {
@@ -122,7 +122,7 @@ where
         cur: 0,
     }}
 
-    pub(crate) fn next(&mut self) -> Result<Spanned, ::failure::Error>
+    pub(crate) fn next(&mut self) -> Result<Spanned, failure::Error>
     {
         let path = self.path.clone();
         let line = self.cur;
@@ -140,7 +140,7 @@ where
         Ok(Spanned { path, line, col, s })
     }
 
-    fn expect_blank_until_eof(&mut self) -> Result<(), ::failure::Error> {
+    fn expect_blank_until_eof(&mut self) -> Result<(), failure::Error> {
         while let Ok(line) = self.next() {
             if let Some(word) = line.words().next() {
                 bail!(word.error("expected end of file"));
@@ -193,7 +193,7 @@ impl<S: AsRef<str>> Spanned<S> {
     // Like 's.trim().split_whitespace()', but tracks file position
     pub(crate) fn words<'a>(&'a self) -> Words<'a>
     {
-        use ::std::iter::once;
+        use std::iter::once;
 
         let bytes = self.s.as_ref().as_bytes().iter().cloned();
 
@@ -241,7 +241,7 @@ impl<S: AsRef<str>> Spanned<S> {
 pub(crate) struct Words<'a> {
     path: Option<Rc<PathBuf>>,
     line: usize,
-    iter: Box<Iterator<Item=Spanned<&'a str>> + 'a>,
+    iter: Box<dyn Iterator<Item=Spanned<&'a str>> + 'a>,
 }
 
 impl<'a> Iterator for Words<'a> {
@@ -324,7 +324,7 @@ pub(crate) struct Unsigned(pub u64);
 
 #[derive(Debug, Fail)]
 #[fail(display = "{}", _0)]
-pub(crate) struct ParseUnsignedError(::failure::Error);
+pub(crate) struct ParseUnsignedError(failure::Error);
 
 #[derive(Debug, Fail)]
 #[fail(display = "invalid digit for integer")]
@@ -353,7 +353,7 @@ pub(crate) fn is_valid_symbol_for_symbol_line(s: &str) -> bool {
 
     // no leading digit
     match s.bytes().next().expect("BUG") {
-        b'0'...b'9' => false,
+        b'0'..=b'9' => false,
         _ => true,
     }
 }
@@ -393,7 +393,7 @@ fn classify_coord_line(mut line: &str) -> CoordLineType {
     }
 }
 
-fn _from_reader<R, P>(f: R, path: Option<P>) -> Result<Poscar, ::failure::Error>
+fn _from_reader<R, P>(f: R, path: Option<P>) -> Result<Poscar, failure::Error>
 where R: BufRead, P: AsRef<Path>,
 {
     let mut lines = Lines::new(f.lines(), path);
@@ -457,7 +457,7 @@ where R: BufRead, P: AsRef<Path>,
         // New in vasp 5, a line with elemental symbols can appear before the line with counts.
         let (group_symbols, counts_line) = match line.as_str().trim().as_bytes()[0] {
             // this line clearly has counts
-            b'0'...b'9' => (None, line),
+            b'0'..=b'9' => (None, line),
 
             // this line must have symbols
             _ => {
@@ -633,7 +633,7 @@ where R: BufRead, P: AsRef<Path>,
                 let one_less = n.checked_sub(1).expect("BUG"); // (we forbade 0 atoms)
                 let lines = (0..one_less).map(|_| lines.next());
                 // Put back the one we already read, for a total of N lines
-                let lines = ::std::iter::once(Ok(line)).chain(lines);
+                let lines = std::iter::once(Ok(line)).chain(lines);
 
                 let velocities = lines.map(|line| {
                     let line = line?; // EOF?
@@ -641,7 +641,7 @@ where R: BufRead, P: AsRef<Path>,
                     Ok(arr_3![_ => {
                         words.next_or_err("expected 3 coordinates")?.parse()?
                     }])
-                }).collect::<Result<Vec<_>, ::failure::Error>>()?;
+                }).collect::<Result<Vec<_>, failure::Error>>()?;
 
                 let velocities = match has_direct {
                     true  => Coords::Frac(velocities),

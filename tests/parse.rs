@@ -7,17 +7,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate vasp_poscar;
 #[macro_use]
 extern crate serde;
-extern crate serde_yaml;
 
-use ::std::fs;
-use ::std::path::Path;
+use std::fs;
+use std::path::Path;
 
-use ::vasp_poscar::Poscar;
-use ::vasp_poscar::failure::Error as FailError;
-use ::vasp_poscar::failure::ResultExt as FailResultExt;
+use vasp_poscar::Poscar;
+use vasp_poscar::failure::Error as FailError;
+use vasp_poscar::failure::ResultExt as FailResultExt;
 
 fn main() {
     let tests = collect_tests("tests/parse".as_ref()).unwrap();
@@ -113,7 +111,7 @@ fn collect_tests(dir: &Path) -> Result<Vec<TestSpec>, FailError> {
         let path = entry.path();
         if path.extension() == Some("yaml".as_ref()) {
             let file = fs::File::open(path.as_path())?;
-            let cases: Vec<RawTest> = ::serde_yaml::from_reader(file)
+            let cases: Vec<RawTest> = serde_yaml::from_reader(file)
                                       .with_context(|_| {
                                           format!("error reading {}", path.as_path().display())
                                       })?;

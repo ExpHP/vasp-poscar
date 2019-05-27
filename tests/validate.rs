@@ -11,7 +11,6 @@
 // major ways to construct a `Poscar`.
 #![deny(unused)]
 
-extern crate vasp_poscar;
 use vasp_poscar::{Builder, RawPoscar, Coords, ScaleLine, ValidationError};
 
 #[macro_use]
