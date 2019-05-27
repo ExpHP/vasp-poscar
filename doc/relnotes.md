@@ -1,5 +1,8 @@
 # `vasp-poscar` release notes
 
+## **v0.3.1**:
+* Added `Poscar::num_sites`, `Poscar::site_symbols`, and `Builder::site_symbols`.
+
 ## **v0.3.0**:
 * Updated to the 2018 edition of Rust.
 * The `Box<dyn VeclikeIterator>` return types of `Poscar::group_symbols` and `Poscar::group_counts` have been replaced with `impl VeclikeIterator`.
