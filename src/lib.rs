@@ -14,14 +14,7 @@
 //! See the [`Poscar`] type for more details.
 //!
 //! ```rust
-//! # #[derive(Debug)] enum Never {}
-//! #
-//! # impl<T: std::fmt::Display> From<T> for Never {
-//! #     fn from(x: T) -> Never { panic!("{}", x); }
-//! # }
-//! #
-//! # fn _main() -> Result<(), Never> {Ok({
-//!
+//! # fn main() -> Result<(), failure::Error> {Ok({
 //! use vasp_poscar::{Poscar, ScaleLine};
 //!
 //! const EXAMPLE: &'static str = "\
@@ -66,8 +59,6 @@
 //!   0.25 0.25 0.25
 //! ");
 //! # })}
-//! # fn main() { _main().unwrap() }
-//! #
 //! ```
 //!
 //! [VASP POSCAR]: http://cms.mpi.univie.ac.at/vasp/guide/node59.html

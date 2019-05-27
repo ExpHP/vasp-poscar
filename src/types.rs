@@ -272,20 +272,13 @@ impl Poscar {
 /// You may parse the file into a Poscar first.
 ///
 /// ```rust,no_run
-/// # #[derive(Debug)] enum Never {}
-/// #
-/// # impl<T: std::fmt::Display> From<T> for Never {
-/// #     fn from(x: T) -> Never { panic!("{}", x); }
-/// # }
-/// #
-/// # fn _main() -> Result<(), Never> {Ok({
+/// # fn main() -> Result<(), failure::Error> {Ok({
 /// # use vasp_poscar::Poscar;
 /// #
 /// # #[allow(unused)]
 /// let poscar = Poscar::from_path("tests/POSCAR")?.into_raw();
 /// #
 /// # })}
-/// # fn main() { _main().unwrap() }
 /// ```
 ///
 /// # Manipulation
@@ -301,17 +294,8 @@ impl Poscar {
 /// use the [`validate`] method to obtain a [`Poscar`] first.
 ///
 /// ```rust,no_run
-/// # #[derive(Debug)] enum Never {}
-/// #
-/// # impl<T: std::fmt::Display> From<T> for Never {
-/// #     fn from(x: T) -> Never { panic!("{}", x); }
-/// # }
-/// #
-/// # fn _main() -> Result<(), Never> {Ok({
-/// # use vasp_poscar::RawPoscar;
-/// #
-/// # fn get_raw_poscar() -> RawPoscar { unimplemented!() }
-/// #
+/// # fn get_raw_poscar() -> vasp_poscar::RawPoscar { unimplemented!() }
+/// # fn main() -> Result<(), failure::Error> {Ok({
 /// // suppose you have a RawPoscar
 /// let raw = get_raw_poscar();
 ///
@@ -319,9 +303,7 @@ impl Poscar {
 /// let poscar = raw.validate()?;
 /// // ...which can be printed.
 /// print!("{}", poscar);
-/// #
 /// # })}
-/// # fn main() { _main().unwrap() }
 /// ```
 ///
 /// [VASP documentation]: https://cms.mpi.univie.ac.at/vasp/vasp/POSCAR_file.html
