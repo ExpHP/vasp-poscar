@@ -14,9 +14,9 @@
 //!
 //! [`Builder`]: struct.Builder.html
 
-use ::{ScaleLine, Coords, RawPoscar, Poscar, ValidationError};
-use ::types::{CoordsTag};
-use ::{ToN3};
+use crate::{ScaleLine, Coords, RawPoscar, Poscar, ValidationError};
+use crate::types::{CoordsTag};
+use crate::{ToN3};
 
 /// Allows construction of [`Poscar`]/[`RawPoscar`] via the builder pattern.
 ///
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn test_velocities() {
-        use Coords::{Frac, Cart};
+        use crate::Coords::{Frac, Cart};
 
         for coords in vec![
             Frac(vec![[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),

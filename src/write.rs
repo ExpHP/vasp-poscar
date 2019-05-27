@@ -8,11 +8,11 @@
 // except according to those terms.
 
 use ::std::fmt;
-use ::{Poscar, RawPoscar, ScaleLine, Coords};
+use crate::{Poscar, RawPoscar, ScaleLine, Coords};
 
 impl fmt::Display for Poscar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
-    { ::write::display(f, self) }
+    { crate::write::display(f, self) }
 }
 
 fn display(w: &mut fmt::Formatter, poscar: &Poscar) -> fmt::Result

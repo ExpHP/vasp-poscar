@@ -7,7 +7,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::{Coords, RawPoscar, ScaleLine, Poscar};
+use crate::{Coords, RawPoscar, ScaleLine, Poscar};
 
 use ::std::rc::Rc;
 use ::std::io::prelude::*;

@@ -7,7 +7,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::math::{inv_f64, det_f64};
+use crate::math::{inv_f64, det_f64};
 use ::std::borrow::{Cow};
 
 /// Represents a POSCAR file.
@@ -67,7 +67,7 @@ impl Poscar {
 
 #[test]
 fn test_group_iters() {
-    use ::{Builder, Zeroed};
+    use crate::{Builder, Zeroed};
 
     let poscar =
         Builder::new()
@@ -167,9 +167,9 @@ impl Poscar {
         match self.0.positions.as_ref() {
             Coords::Cart(pos) => {
                 let scale = self.effective_scale_factor();
-                ::math::scale_n3(pos, scale).0.into()
+                crate::math::scale_n3(pos, scale).0.into()
             },
-            Coords::Frac(x) => ::math::mul_n3_33(x, &self.scaled_lattice()).into(),
+            Coords::Frac(x) => crate::math::mul_n3_33(x, &self.scaled_lattice()).into(),
         }
     }
 
@@ -217,7 +217,7 @@ impl Poscar {
     fn scaled_lattice(&self) -> [[f64; 3]; 3]
     {
         let f = self.effective_scale_factor();
-        ::math::scale_33(&self.0.lattice_vectors, f).0
+        crate::math::scale_33(&self.0.lattice_vectors, f).0
     }
 }
 
@@ -456,7 +456,7 @@ impl RawPoscar {
             // Check for conditions that we know are problematic.
             for sym in group_symbols {
                 g_ensure!(
-                    ::parse::is_valid_symbol_for_symbol_line(sym.as_str()),
+                    crate::parse::is_valid_symbol_for_symbol_line(sym.as_str()),
                     ValidationError::InvalidSymbol(Some(sym.as_str().into())),
                 )
             }
@@ -465,7 +465,7 @@ impl RawPoscar {
             // symbols line, thereby absolutely guaranteeing that it roundtrips.
             // This check is guaranteed to remain sufficient even if we were to change
             // the rules of tokenization.
-            use ::parse::Spanned;
+            use crate::parse::Spanned;
             let symbol_str = group_symbols.join(" ");
             let spanned = Spanned::wrap_arbitrary(symbol_str);
 
@@ -552,8 +552,8 @@ impl Coords {
             (Frac(v), FRAC) => (&v[..]).into(),
 
             // compute
-            (Frac(v), CART) => ::math::mul_n3_33(v, lattice).into(),
-            (Cart(v), FRAC) => ::math::mul_n3_33(v, &inv_f64(lattice)).into(),
+            (Frac(v), CART) => crate::math::mul_n3_33(v, lattice).into(),
+            (Cart(v), FRAC) => crate::math::mul_n3_33(v, &inv_f64(lattice)).into(),
         }
     }
 }
@@ -598,7 +598,7 @@ impl<A> Coords<A> {
 #[deny(unused)]
 mod accessor_tests {
     use super::*;
-    use ::Builder;
+    use crate::Builder;
 
     // This test aims to maximize bang-for-the-buck by trying
     // to break as many broken implementations as possible.
@@ -622,7 +622,7 @@ mod accessor_tests {
             [ 2.0, -6.0,  6.0],
             [-2.0, -2.0,  0.0],
         ];
-        assert_eq!(::math::det_f64(&UNSCALED_LATTICE), -8.0);
+        assert_eq!(crate::math::det_f64(&UNSCALED_LATTICE), -8.0);
         // We will use the scale line to scale it by an additional factor of 2.
         const SCALE: f64 = 2.0;
         // These all have exact representations in f64.

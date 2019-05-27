@@ -85,9 +85,9 @@ mod write;
 mod math;
 pub mod builder;
 
-pub use types::{Coords, ScaleLine, RawPoscar, Poscar};
-pub use types::ValidationError;
-pub use builder::{Builder, Zeroed};
+pub use crate::types::{Coords, ScaleLine, RawPoscar, Poscar};
+pub use crate::types::ValidationError;
+pub use crate::builder::{Builder, Zeroed};
 
 /// Types convertable into `Vec<[X; 3]>`.
 ///

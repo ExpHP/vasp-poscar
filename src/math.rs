@@ -102,7 +102,7 @@ pub(crate) fn scale_n3(vs: &[[f64; 3]], scale: f64) -> MustUse<Vec<[f64; 3]>> {
 #[deny(unused)]
 mod tests {
     use super::*;
-    use ::util::test_matrices::*;
+    use crate::util::test_matrices::*;
 
     #[test]
     fn test_mul_n3_33() {
