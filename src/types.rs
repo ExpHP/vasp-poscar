@@ -50,18 +50,14 @@ impl Poscar {
     { &self.0.comment }
 
     /// Get the symbols for each atom type, if provided.
-    ///
-    /// The returned object is an `Iterator` of `&str`.
-    pub fn group_symbols(&self) -> Option<GroupSymbols<'_>>
+    pub fn group_symbols(&self) -> Option<impl VeclikeIterator<Item=&str> + '_>
     {
         self.0.group_symbols.as_ref()
             .map(|syms| Box::new(syms.iter().map(|sym| &sym[..])) as Box<_>)
     }
 
     /// Get the counts of each atom type.
-    ///
-    /// The returned object is an `Iterator` of `usize`.
-    pub fn group_counts(&self) -> GroupCounts<'_>
+    pub fn group_counts(&self) -> impl VeclikeIterator<Item=usize> + '_
     { Box::new(self.0.group_counts.iter().map(|&c| c)) }
 }
 
@@ -97,19 +93,9 @@ fn test_group_iters() {
 
 /// Combines useful standard library iterator traits into one.
 ///
-/// This exists because a trait object may only involve one non-OIBIT trait.
+/// Used in `impl Trait` return types to abbreviate an otherwise long type.
 pub trait VeclikeIterator: ExactSizeIterator + DoubleEndedIterator { }
 impl<Xs: ExactSizeIterator + DoubleEndedIterator> VeclikeIterator for Xs { }
-
-/// Returned by [`Poscar::group_symbols`].
-///
-/// [`Poscar::group_symbols`]: struct.Poscar.html#method.group_symbols
-pub type GroupSymbols<'a> = Box<dyn VeclikeIterator<Item=&'a str> + 'a>;
-
-/// Returned by [`Poscar::group_counts`].
-///
-/// [`Poscar::group_counts`]: struct.Poscar.html#method.group_counts
-pub type GroupCounts<'a> = Box<dyn VeclikeIterator<Item=usize> + 'a>;
 
 /// # Accessing computed properties
 impl Poscar {

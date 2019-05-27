@@ -87,7 +87,7 @@ mod error {
     impl From<ParseFloatError> for Kind { fn from(e: ParseFloatError) -> Kind { Kind::ParseFloat(e) } }
     impl From<ParseUnsignedError> for Kind { fn from(e: ParseUnsignedError) -> Kind { Kind::ParseUnsigned(e) } }
     impl From<ParseLogicalError> for Kind { fn from(e: ParseLogicalError) -> Kind { Kind::ParseLogical(e) } }
-    impl<'a> From<&'a str> for Kind { fn from(e: &'a str) -> Kind { Kind::Generic(e.into()) } }
+    impl From<&str> for Kind { fn from(e: &str) -> Kind { Kind::Generic(e.into()) } }
     impl From<String> for Kind { fn from(e: String) -> Kind { Kind::Generic(e) } }
 }
 
