@@ -1,5 +1,8 @@
 # `vasp-poscar` release notes
 
+## **v0.3.2**:
+* Enabled custom formatting of all floats when writing a file, e.g. `print!("{:.6}", poscar)`.
+
 ## **v0.3.1**:
 * Added `Poscar::num_sites`, `Poscar::site_symbols`, and `Builder::site_symbols`.
 
