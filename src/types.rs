@@ -18,7 +18,62 @@ use std::borrow::{Cow};
 /// * **In-memory construction** via [`Builder`].
 /// * **Manipulation/inspection** of the data via [`raw`] and [`RawPoscar`].
 ///   *(this will be supplanted with cleaner solutions over time)*
-/// * **Writing files** through `std::fmt::Display`. (e.g. `print!` and `write!`)
+/// * **Writing files**, via `std::fmt::Display`.
+///
+/// Please follow the links above to learn about these APIs.  The remaining item
+/// is documented below.
+///
+/// # Writing files
+///
+/// Printing of POSCAR files is implemented as a `std::fmt::Display`
+/// impl on the [`Poscar`] type.  This means that you can use it in all of
+/// the standard library macros like `print!`, `format!`, and `write!`.
+///
+/// By default, the crate prints to roundtrip precision, switching to
+/// exponential for values with large or small magnitudes.  If you would prefer
+/// a more tabular output format, you may specify format flags, which will
+/// be used to control the formatting of all floats.
+///
+/// ```rust
+/// # fn main() -> Result<(), failure::Error> {Ok({
+/// use vasp_poscar::Poscar;
+///
+/// let poscar = Poscar::from_reader("\
+/// POSCAR File
+///    1.0
+///      1.0   0.0   0.0
+///      0.0   1.23456789012 -0.2
+///      0.0   0.0   1.0
+///   1
+/// Direct
+///  0.1  -1.2e-30  0.0
+/// ".as_bytes())?;
+///
+/// // Default format: roundtrip
+/// assert_eq!(format!("{}", poscar), "\
+/// POSCAR File
+///   1.0
+///     1.0 0.0 0.0
+///     0.0 1.23456789012 -0.2
+///     0.0 0.0 1.0
+///    1
+/// Direct
+///   0.1 -1.2e-30 0.0
+/// ");
+///
+/// // Custom formats
+/// assert_eq!(format!("{:>9.6}", poscar), "\
+/// POSCAR File
+///    1.000000
+///      1.000000  0.000000  0.000000
+///      0.000000  1.234568 -0.200000
+///      0.000000  0.000000  1.000000
+///    1
+/// Direct
+///    0.100000 -0.000000  0.000000
+/// ");
+/// # })}
+/// ```
 ///
 /// [`Poscar::from_reader`]: #method.from_reader
 /// [`RawPoscar`]: struct.RawPoscar.html
