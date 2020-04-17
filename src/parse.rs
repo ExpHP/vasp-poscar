@@ -21,12 +21,18 @@ pub(crate) use self::error::ParseError;
 impl Poscar {
     /// Reads a POSCAR from an open file or a `&[u8]` buffer.
     ///
+    /// This takes any type of object that implements [`BufRead`].
+    /// For example, use a [`BufReader`] if you want to read from a file,
+    /// or `&[u8]` if you want to read from a string.
+    ///
     /// **A successful read will always read the entire object to EOF.**
     /// This is simply the nature of the file format.  If you need to extract
     /// a POSCAR embedded within a larger resource, you will likely need to
     /// use an adapter like [`Read::take`].
     ///
     /// [`Read::take`]: https://doc.rust-lang.org/std/io/trait.Read.html#method.take
+    /// [`BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
+    /// [`BufReader`]: https://doc.rust-lang.org/std/io/struct.BufReader.html
     // NOTE: This form is unable to include a filename in error messages.
     // FIXME how do other libraries handle this?
     //       maybe the filename is simply not this crate's responsibility?

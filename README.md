@@ -55,7 +55,9 @@ poscar.scale = ScaleLine::Volume(10.0);
 // Turn back into a Poscar for writing.
 // Notice Poscar implements Display.
 let poscar = poscar.validate()?;
-print!("{}, poscar);
+
+print!("{}", poscar);  // default uses dtoa crate to format floats (roundtrip precision)
+print!("{:>9.6}", poscar);  // you can also specify flags to format each float
 ```
 
 ## Notes about the format

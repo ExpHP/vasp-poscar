@@ -26,14 +26,25 @@ fn display(w: &mut fmt::Formatter<'_>, poscar: &Poscar) -> fmt::Result
     assert!(!comment.contains("\n"), "BUG");
     assert!(!comment.contains("\r"), "BUG");
 
+    let style = FloatStyle::new(w);
+
     writeln!(w, "{}", comment)?;
+    write!(w, "  ")?;
     match scale {
-        ScaleLine::Factor(x) => writeln!(w, "  {}", Dtoa(x))?,
-        ScaleLine::Volume(x) => writeln!(w, "  -{}", Dtoa(x))?,
+        ScaleLine::Factor(x) => {
+            style.write_f64(w, x)?;
+        },
+        ScaleLine::Volume(x) => {
+            write!(w, "-")?;
+            style.write_f64(w, x)?;
+        },
     }
+    writeln!(w)?;
 
     for row in lattice_vectors {
-        writeln!(w, "    {}", By3(*row, Dtoa))?;
+        write!(w, "    ")?;
+        style.write_v3(w, *row)?;
+        writeln!(w)?;
     }
 
     if let Some(group_symbols) = group_symbols.as_ref() {
@@ -58,7 +69,8 @@ fn display(w: &mut fmt::Formatter<'_>, poscar: &Poscar) -> fmt::Result
 
     let positions = positions.as_ref().raw();
     for (i, pos) in positions.iter().enumerate() {
-        write!(w, "  {}", By3(*pos, Dtoa))?;
+        write!(w, "  ")?;
+        style.write_v3(w, *pos)?;
         if let &Some(ref dynamics) = dynamics {
             let fmt = |b| match b { true => 'T', false => 'F' };
             write!(w, " {}", By3(dynamics[i], fmt))?;
@@ -75,7 +87,9 @@ fn display(w: &mut fmt::Formatter<'_>, poscar: &Poscar) -> fmt::Result
 
         let velocities = velocities.as_ref().raw();
         for v in velocities {
-            writeln!(w, "  {}", By3(*v, Dtoa))?;
+            write!(w, "  ")?;
+            style.write_v3(w, *v)?;
+            writeln!(w)?;
         }
     }
 
@@ -98,18 +112,45 @@ where
     Ok(())
 }
 
-struct Dtoa(f64);
-impl fmt::Display for Dtoa {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // not the most efficient thing in the world...
-        let mut bytes = vec![];
-        dtoa::write(&mut bytes, self.0).map_err(|_| fmt::Error)?;
-        f.write_str(&String::from_utf8(bytes).unwrap())
+#[derive(Copy, Clone)]
+enum FloatStyle { Dtoa, ForwardDisplay }
+impl FloatStyle {
+    fn new(f: &fmt::Formatter) -> Self {
+        // Use Dtoa only for {}.
+        if f.width().is_some() || f.precision().is_some() || f.sign_plus() || f.alternate() {
+            FloatStyle::ForwardDisplay
+        } else {
+            FloatStyle::Dtoa
+        }
+    }
+
+    // (directly implemented as a fn() -> fmt::Result instead of a Display type
+    //  to ensure that we never forget to forward the flags)
+    fn write_f64(self, f: &mut fmt::Formatter<'_>, value: f64) -> fmt::Result {
+        match self {
+            FloatStyle::ForwardDisplay => {
+                fmt::Display::fmt(&value, f)
+            },
+            FloatStyle::Dtoa => {
+                // not the most efficient thing in the world...
+                let mut bytes = vec![];
+                dtoa::write(&mut bytes, value).map_err(|_| fmt::Error)?;
+                f.write_str(&String::from_utf8(bytes).unwrap())
+            },
+        }
+    }
+
+    fn write_v3(self, f: &mut fmt::Formatter<'_>, value: [f64; 3]) -> fmt::Result {
+        self.write_f64(f, value[0])?;
+        write!(f, " ")?;
+        self.write_f64(f, value[1])?;
+        write!(f, " ")?;
+        self.write_f64(f, value[2])?;
+        Ok(())
     }
 }
 
 // Formats three space-separated tokens after applying a conversion function to each.
-// Merely having this around makes it easier to remember to use Dtoa.
 struct By3<A, F>([A; 3], F);
 impl<A, B, F> fmt::Display for By3<A, F>
 where A: Clone,

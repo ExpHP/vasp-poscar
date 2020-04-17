@@ -25,15 +25,21 @@ fn boring_poscar() -> RawPoscar {
 
 // Stringify a poscar and grab a few select lines into an array.
 macro_rules! poscar_lines {
-    ($poscar:expr, [$($i:expr),+ $(,)*]) => {{
+    (trim=$trim:expr, fmt=$template:literal, $poscar:expr, [$($i:expr),+ $(,)*]) => {{
         let poscar: vasp_poscar::Poscar = $poscar;
-        let s = format!("{}", poscar);
+        let s = format!($template, poscar);
+        let maybe_trim = |s: String| {
+            if $trim { s.trim().to_string() } else  { s }
+        };
         [
             // (this is only for use in assert_eq, where a default value
             //  for the string is a bit more helpful than an early panic)
-            $( s.lines().nth($i).unwrap_or_else(|| "(LINE NOT PRESENT)").to_string() ,)+
+            $( maybe_trim(s.lines().nth($i).unwrap_or_else(|| "(LINE NOT PRESENT)").to_string()) ,)+
         ]
-    }}
+    }};
+    ($poscar:expr, [$($i:tt)+]) => {
+        poscar_lines!(trim=false, fmt="{}", $poscar, [$($i)+])
+    };
 }
 
 #[test]
@@ -210,4 +216,48 @@ fn velocities() {
             ],
         );
     }
+}
+
+#[test]
+fn float_formatting() {
+    let mut poscar = boring_poscar();
+    poscar.lattice_vectors = [
+        [1.0, -1.2e-30, 0.0], // a number dtoa is useful for
+        [0.0, 1.23456789012, 0.0],  // a number to be rounded
+        [0.0, 0.0, 1.0],
+    ];
+    poscar.group_counts = vec![1];
+    poscar.positions = Coords::Frac(vec![
+        [1.23456789012, -1.2e-30, 0.0],
+    ]);
+
+    poscar.velocities = Some(Coords::Frac(vec![
+        [-1.2e-30, 0.0, 1.23456789012],
+    ]));
+    let poscar = poscar.clone().validate().unwrap();
+
+    assert_eq!(
+        // "{}" uses dtoa
+        poscar_lines!(trim=true, fmt="{}", poscar.clone(), [1, 2, 3, 4, 7, 9]),
+        [
+            "1.0",
+            "1.0 -1.2e-30 0.0",
+            "0.0 1.23456789012 0.0",
+            "0.0 0.0 1.0",
+            "1.23456789012 -1.2e-30 0.0",
+            "-1.2e-30 0.0 1.23456789012",
+        ],
+    );
+    assert_eq!(
+        // other format strings use fmt::Display and apply the flags to all floats
+        poscar_lines!(trim=true, fmt="{:>9.6}", poscar, [1, 2, 3, 4, 7, 9]),
+        [
+            "1.000000",
+            "1.000000 -0.000000  0.000000",
+            "0.000000  1.234568  0.000000",
+            "0.000000  0.000000  1.000000",
+            "1.234568 -0.000000  0.000000",
+            "-0.000000  0.000000  1.234568",
+        ],
+    );
 }
